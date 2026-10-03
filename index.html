@@ -1019,15 +1019,17 @@
       const kayitliOgrPin = sessionStorage.getItem('kitapKurtlari_aktifOgrPin');
       const kayitliOgrtPin = sessionStorage.getItem('kitapKurtlari_aktifOgrtPin');
 
+      ogrenciPinKutulariGuncelle();
       if (kayitliOgrPin) {
+        ekranDegistir('ogrenciGiris');
         document.getElementById('ogrenciPinInput').value = kayitliOgrPin;
         ogrenciPinKutulariGuncelle();
         ogrenciGirisYap(null);
       } else if (kayitliOgrtPin) {
+        ekranDegistir('ogretmenGiris');
         document.getElementById('ogretmenSifreInput').value = kayitliOgrtPin;
         ogretmenGirisYap(null);
       } else {
-        ogrenciPinKutulariGuncelle();
         ekranDegistir('ogrenciGiris');
       }
     });
@@ -1224,9 +1226,25 @@
 
       if (aktifApiHedefi()) {
         try {
-          const data = await apiIstegiGonder({ action: 'adminGiris', kullaniciAdi: kullanici, sifre: sifre });
+          let data = await apiIstegiGonder({ action: 'adminGiris', kullaniciAdi: kullanici, sifre: sifre });
           if (data && data.success) {
             aktifAdmin = { kullaniciAdi: kullanici, sifre: sifre };
+            // Çevrimdışı modda eklenmiş öğretmenler varsa otomatik olarak Google Sheets'e aktar
+            const bulutPinler = new Set((data.ogretmenler || []).map(o => String(o.pin).trim()));
+            for (const yerelOgrt of (demoData.ogretmenler || [])) {
+              if (!bulutPinler.has(String(yerelOgrt.pin).trim())) {
+                const ekleSonuc = await apiIstegiGonder({
+                  action: 'ogretmenEkle',
+                  adminKullanici: kullanici,
+                  adminSifre: sifre,
+                  adSoyad: yerelOgrt.adSoyad,
+                  sinif: yerelOgrt.sinif,
+                  pin: yerelOgrt.pin
+                });
+                if (ekleSonuc && ekleSonuc.success) data = ekleSonuc;
+              }
+            }
+            document.getElementById('ekranOgrenciGiris').classList.add('hidden');
             document.getElementById('ekranAdminGiris').classList.add('hidden');
             document.getElementById('ekranAdminPanel').classList.remove('hidden');
             adminPaneliDoldur(data);
@@ -1237,7 +1255,7 @@
             return;
           }
         } catch (err) {
-          toastGoster('Sunucu bağlantısı kurulamadı, çevrimdışı moda geçiliyor.', '⚠️');
+          console.warn('Google Sheets bağlantısı henüz aktif değil, yerel mod kullanılıyor:', err);
         }
       }
 
@@ -2155,6 +2173,7 @@
             ogretmenSifre = pin;
             sessionStorage.setItem('kitapKurtlari_aktifOgrtPin', pin);
             aktifOgretmen = data.ogretmen;
+            document.getElementById('ekranOgrenciGiris').classList.add('hidden');
             document.getElementById('ekranOgretmenGiris').classList.add('hidden');
             document.getElementById('ekranOgretmenPanel').classList.remove('hidden');
             ogretmenPaneliDoldur(data);
@@ -2165,7 +2184,7 @@
             return;
           }
         } catch (err) {
-          toastGoster('Çevrimdışı öğretmen moduna geçiliyor.', '⚠️');
+          console.warn('Google Sheets bağlantısı henüz aktif değil, yerel veritabanı kullanılıyor:', err);
         }
       }
 
@@ -2174,11 +2193,13 @@
         ogretmenSifre = pin;
         sessionStorage.setItem('kitapKurtlari_aktifOgrtPin', pin);
         aktifOgretmen = ogrt;
+        document.getElementById('ekranOgrenciGiris').classList.add('hidden');
         document.getElementById('ekranOgretmenGiris').classList.add('hidden');
         document.getElementById('ekranOgretmenPanel').classList.remove('hidden');
         ogretmenVerileriniYukle();
       } else {
         sessionStorage.removeItem('kitapKurtlari_aktifOgrtPin');
+        ekranDegistir('ogretmenGiris');
         toastGoster('Hatalı Öğretmen PIN kodu!', '❌');
       }
     }
