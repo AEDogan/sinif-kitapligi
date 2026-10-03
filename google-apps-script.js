@@ -13,10 +13,8 @@ const TABLO_ISIMLERI = {
   AYARLAR: "Ayarlar"
 };
 
-/**
- * Google Sheets Formula Injection (CSV Injection) koruması.
- * =, +, -, @, sekme veya satır başı ile başlayan metinlerin başına ' ekler.
- */
+// Google Sheets Formula Injection (CSV Injection) koruması.
+// Eşittir (=), artı (+), eksi (-), at işareti, sekme veya satır başı ile başlayan metinlerin başına ' ekler.
 function guvenliHucreDegeri(deger) {
   if (deger === null || deger === undefined) return "";
   if (typeof deger === "number" || typeof deger === "boolean") return deger;
@@ -40,9 +38,7 @@ function benzersizIdUret(onEk) {
   return onEk + "-" + new Date().getTime().toString().slice(-6) + "-" + rastgele;
 }
 
-/**
- * 1. İLK KURULUM FONKSİYONU
- */
+// 1. İLK KURULUM FONKSİYONU
 function ilkKurulum() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -95,17 +91,13 @@ function ilkKurulum() {
   }
 }
 
-/**
- * 2. GET İSTEKLERİ (Salt Okunur Sorgular)
- */
+// 2. GET İSTEKLERİ (Salt Okunur Sorgular)
 function doGet(e) {
   const params = (e && e.parameter) ? e.parameter : {};
-  return istekYonlendir(params, false);
+  return istekYonlendir(params);
 }
 
-/**
- * 3. POST İSTEKLERİ (Veri Yazma & Güvenli Giriş İşlemleri)
- */
+// 3. POST İSTEKLERİ (Veri Yazma & Güvenli Giriş İşlemleri)
 function doPost(e) {
   let params = {};
   if (e && e.postData && e.postData.contents) {
@@ -115,10 +107,10 @@ function doPost(e) {
       return jsonYanit({ success: false, message: "Geçersiz veri formatı." });
     }
   }
-  return istekYonlendir(params, true);
+  return istekYonlendir(params);
 }
 
-function istekYonlendir(params, isPost) {
+function istekYonlendir(params) {
   const action = String(params.action || "").trim();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -306,6 +298,7 @@ function adminPanelVerisiOlustur(ss) {
 
   return {
     success: true,
+    message: "",
     ogretmenler: zenginOgretmenler,
     okulIstatistik: {
       ogretmenSayisi: ogretmenler.length,
@@ -522,6 +515,7 @@ function ogrenciGiris(ss, pin) {
         numara: String(row[2]),
         sinif: String(row[5] || ayarlar.SinifAdi || "3-A Sınıfı"),
         ogretmenId: String(row[6] || ""),
+        ogretmenAdi: "",
         avatar: String(row[7] || "🦊")
       };
       break;
