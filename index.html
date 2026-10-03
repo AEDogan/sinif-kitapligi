@@ -74,7 +74,7 @@
         </div>
       </div>
 
-      <!-- Rol Seçici (Öğrenci giriş yaptığında kafa karıştırmaması için diğer roller gizlenir) -->
+      <!-- Sağ Üst: Rol Seçici (Giriş Ekranlarında) ve Sağ Üst Çıkış Butonu (Giriş Yapıldığında) -->
       <div id="ustNavRolKutusu" class="flex items-center gap-2 text-xs sm:text-sm">
         <button onclick="ekranDegistir('ogrenciGiris')" id="navOgrenci" class="px-3.5 py-1.5 rounded-full font-bold transition bg-amber-500 text-white shadow-sm">
           👧 Öğrenci Girişi
@@ -84,6 +84,12 @@
         </button>
         <button onclick="ekranDegistir('adminGiris')" id="navAdmin" class="px-3.5 py-1.5 rounded-full font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200">
           🛡️ Admin
+        </button>
+        <button onclick="genelCikisYap()" id="btnHeaderCikis" title="Güvenli Çıkış Yap" class="hidden px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm transition shadow-sm flex items-center gap-1.5 active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+          </svg>
+          <span>Çıkış Yap</span>
         </button>
       </div>
     </div>
@@ -236,13 +242,6 @@
             </div>
             <div id="ogrPanelHedefAltYazi" class="text-[10px] text-amber-100 font-semibold mt-1">Kitap Kurdu Hedefi</div>
           </div>
-          <button onclick="ogrenciCikisYap()" title="Güvenli Çıkış Yap" class="px-4 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm transition shadow-md flex items-center gap-2 border-2 border-white/80 active:scale-95">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
-            <span>Çıkış Yap</span>
-            <span class="bg-white text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] font-black">✖</span>
-          </button>
         </div>
       </div>
 
@@ -354,13 +353,6 @@
           </button>
           <button onclick="ogrenciEkleModalAc()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1">
             <span>➕</span> Öğrenci Ekle
-          </button>
-          <button onclick="ogretmenCikisYap()" title="Öğretmen Panelinden Çıkış Yap" class="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
-            <span>Çıkış</span>
-            <span class="bg-white text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] font-black">✖</span>
           </button>
         </div>
       </div>
@@ -495,13 +487,6 @@
             <p class="text-slate-400 text-xs">Öğretmen tanımlama, sınıf eşleştirme, okul istatistikleri ve güvenlik ayarları</p>
           </div>
         </div>
-        <button onclick="adminCikisYap()" title="Admin Oturumunu Kapat" class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl text-xs sm:text-sm transition shadow-md flex items-center gap-2 border border-red-400">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-          </svg>
-          <span>Oturumu Kapat</span>
-          <span class="bg-white text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] font-black">✖</span>
-        </button>
       </div>
 
       <!-- Okul Geneli Canlı İstatistik Kartları -->
@@ -1086,15 +1071,38 @@
     }
 
     function ustNavGuncelle() {
+      const navOgr = document.getElementById('navOgrenci');
       const navOgrt = document.getElementById('navOgretmen');
       const navAdm = document.getElementById('navAdmin');
-      // Öğrenci giriş yaptığında kafa karıştırmaması için Öğretmen ve Admin sekmelerini gizle
-      if (aktifOgrenci) {
+      const btnCikis = document.getElementById('btnHeaderCikis');
+
+      const ogrPanelAcik = !document.getElementById('ekranOgrenciPanel').classList.contains('hidden');
+      const ogrtPanelAcik = !document.getElementById('ekranOgretmenPanel').classList.contains('hidden');
+      const admPanelAcik = !document.getElementById('ekranAdminPanel').classList.contains('hidden');
+      const herhangiPanelAcik = ogrPanelAcik || ogrtPanelAcik || admPanelAcik;
+
+      if (herhangiPanelAcik) {
+        navOgr.classList.add('hidden');
         navOgrt.classList.add('hidden');
         navAdm.classList.add('hidden');
+        if (btnCikis) btnCikis.classList.remove('hidden');
       } else {
+        navOgr.classList.remove('hidden');
         navOgrt.classList.remove('hidden');
         navAdm.classList.remove('hidden');
+        if (btnCikis) btnCikis.classList.add('hidden');
+      }
+    }
+
+    function genelCikisYap() {
+      const admPanelAcik = !document.getElementById('ekranAdminPanel').classList.contains('hidden');
+      const ogrtPanelAcik = !document.getElementById('ekranOgretmenPanel').classList.contains('hidden');
+      if (admPanelAcik || aktifAdmin) {
+        adminCikisYap();
+      } else if (ogrtPanelAcik || ogretmenSifre || aktifOgretmen) {
+        ogretmenCikisYap();
+      } else {
+        ogrenciCikisYap();
       }
     }
 
@@ -1117,8 +1125,6 @@
         const el = document.getElementById(n);
         if (el) el.className = 'px-3.5 py-1.5 rounded-full font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
       });
-
-      ustNavGuncelle();
 
       if (hedefEkran === 'ogrenciGiris') {
         if (aktifOgrenci) {
@@ -1144,6 +1150,8 @@
         }
         document.getElementById('navAdmin').className = 'px-3.5 py-1.5 rounded-full font-bold transition bg-slate-900 text-white shadow-sm';
       }
+
+      ustNavGuncelle();
     }
 
     function modalAc(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -1291,6 +1299,7 @@
             document.getElementById('ekranOgrenciGiris').classList.add('hidden');
             document.getElementById('ekranAdminGiris').classList.add('hidden');
             document.getElementById('ekranAdminPanel').classList.remove('hidden');
+            ustNavGuncelle();
             adminPaneliDoldur(data);
             toastGoster('Admin paneline hoş geldiniz!', '🛡️');
             return;
@@ -1307,6 +1316,7 @@
         aktifAdmin = { kullaniciAdi: kullanici, sifre: sifre };
         document.getElementById('ekranAdminGiris').classList.add('hidden');
         document.getElementById('ekranAdminPanel').classList.remove('hidden');
+        ustNavGuncelle();
         adminVerileriniYukle();
         toastGoster('Admin paneline hoş geldiniz!', '🛡️');
       } else {
@@ -2358,6 +2368,7 @@
     }
 
     function ogretmenPaneliDoldur(data) {
+      ustNavGuncelle();
       if (data.ogretmen) {
         document.getElementById('ogretmenPanelSinifRozet').innerText = data.ogretmen.sinif || 'Sınıf Paneli';
         document.getElementById('ogretmenPanelIsimRozet').innerText = `👩‍🏫 ${data.ogretmen.adSoyad}`;
