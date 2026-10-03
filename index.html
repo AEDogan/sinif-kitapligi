@@ -881,7 +881,12 @@
     if (urlApiParam && urlApiParam.startsWith('https://script.google.com/')) {
       localStorage.setItem('kitapKurtlari_apiUrl', urlApiParam.trim());
     }
-    let apiUrl = localStorage.getItem('kitapKurtlari_apiUrl') || VARSAYILAN_GOOGLE_SHEETS_API_URL;
+    let kayitliUrl = (localStorage.getItem('kitapKurtlari_apiUrl') || '').trim();
+    if (kayitliUrl && !kayitliUrl.startsWith('https://script.google.com/')) {
+      localStorage.removeItem('kitapKurtlari_apiUrl');
+      kayitliUrl = '';
+    }
+    let apiUrl = kayitliUrl || VARSAYILAN_GOOGLE_SHEETS_API_URL;
     let aktifOgrenci = null;
     let ogretmenSifre = '';
     let aktifOgretmen = null;
@@ -1409,34 +1414,34 @@
             return;
           }
         } catch (err) {
-          toastGoster('Bağlantı hatası.', '❌');
+          console.warn('Uzak sunucuya ulaşılamadı, yerel veritabanına kaydediliyor:', err);
+        }
+      }
+
+      const cakisma = demoData.ogretmenler.some(o => o.id !== duzenlenenId && o.pin === pin);
+      if (cakisma) {
+        toastGoster('Bu PIN kodu başka bir öğretmende kullanılıyor!', '❌');
+        return;
+      }
+      if (duzenlenenId) {
+        const ogrt = demoData.ogretmenler.find(o => o.id === duzenlenenId);
+        if (ogrt) {
+          const eskiSinif = ogrt.sinif;
+          ogrt.adSoyad = adSoyad;
+          ogrt.sinif = sinif;
+          ogrt.pin = pin;
+          if (eskiSinif !== sinif) {
+            demoData.ogrenciler.forEach(o => { if (o.sinif === eskiSinif) o.sinif = sinif; });
+            demoData.havuz.forEach(k => { if (k.sinif === eskiSinif) k.sinif = sinif; });
+          }
         }
       } else {
-        const cakisma = demoData.ogretmenler.some(o => o.id !== duzenlenenId && o.pin === pin);
-        if (cakisma) {
-          toastGoster('Bu PIN kodu başka bir öğretmende kullanılıyor!', '❌');
-          return;
-        }
-        if (duzenlenenId) {
-          const ogrt = demoData.ogretmenler.find(o => o.id === duzenlenenId);
-          if (ogrt) {
-            const eskiSinif = ogrt.sinif;
-            ogrt.adSoyad = adSoyad;
-            ogrt.sinif = sinif;
-            ogrt.pin = pin;
-            if (eskiSinif !== sinif) {
-              demoData.ogrenciler.forEach(o => { if (o.sinif === eskiSinif) o.sinif = sinif; });
-              demoData.havuz.forEach(k => { if (k.sinif === eskiSinif) k.sinif = sinif; });
-            }
-          }
-        } else {
-          demoData.ogretmenler.push({ id: 'OGRT-' + Date.now().toString().slice(-4), adSoyad, sinif, pin });
-        }
-        demoKaydet();
-        adminOgretmenDuzenlemeIptal();
-        adminVerileriniYukle();
-        toastGoster('Öğretmen kaydedildi!', '✅');
+        demoData.ogretmenler.push({ id: 'OGRT-' + Date.now().toString().slice(-4), adSoyad, sinif, pin });
       }
+      demoKaydet();
+      adminOgretmenDuzenlemeIptal();
+      adminVerileriniYukle();
+      toastGoster('Öğretmen kaydedildi!', '✅');
     }
 
     async function adminOgretmenSil(ogretmenId) {
@@ -1457,14 +1462,14 @@
             return;
           }
         } catch (err) {
-          toastGoster('Hata oluştu.', '❌');
+          console.warn('Uzak sunucuya ulaşılamadı, yerel veritabanından siliniyor:', err);
         }
-      } else {
-        demoData.ogretmenler = demoData.ogretmenler.filter(o => o.id !== ogretmenId);
-        demoKaydet();
-        adminVerileriniYukle();
-        toastGoster('Öğretmen kaydı silindi.');
       }
+
+      demoData.ogretmenler = demoData.ogretmenler.filter(o => o.id !== ogretmenId);
+      demoKaydet();
+      adminVerileriniYukle();
+      toastGoster('Öğretmen kaydı silindi.');
     }
 
     async function adminAyarlariKaydet(e) {
@@ -1494,16 +1499,16 @@
             return;
           }
         } catch (err) {
-          toastGoster('Hata oluştu.', '❌');
+          console.warn('Uzak sunucuya ulaşılamadı, yerel ayarlar güncelleniyor:', err);
         }
-      } else {
-        demoData.ayarlar.AdminKullanici = yeniKullanici;
-        demoData.ayarlar.AdminSifre = yeniSifre;
-        demoData.ayarlar.KulupBaraji = yeniBaraj;
-        aktifAdmin = { kullaniciAdi: yeniKullanici, sifre: yeniSifre };
-        demoKaydet();
-        toastGoster('Ayarlar güncellendi!', '✅');
       }
+
+      demoData.ayarlar.AdminKullanici = yeniKullanici;
+      demoData.ayarlar.AdminSifre = yeniSifre;
+      demoData.ayarlar.KulupBaraji = yeniBaraj;
+      aktifAdmin = { kullaniciAdi: yeniKullanici, sifre: yeniSifre };
+      demoKaydet();
+      toastGoster('Ayarlar güncellendi!', '✅');
     }
 
     async function demoVerileriniSifirlaOnayli() {
@@ -2851,9 +2856,14 @@
     }
 
     function apiAyariniKaydet() {
-      apiUrl = document.getElementById('inpApiUrl').value.trim();
+      const girilen = document.getElementById('inpApiUrl').value.trim();
+      if (girilen && !girilen.startsWith('https://script.google.com/')) {
+        toastGoster('Bu bir CSV/Tablo linkidir (Salt Okunur). Veri kaydetmek için Uzantılar > Apps Script üzerinden alınan https://script.google.com/.../exec linkini giriniz.', '⚠️');
+        return;
+      }
+      apiUrl = girilen;
       localStorage.setItem('kitapKurtlari_apiUrl', apiUrl);
-      toastGoster('API adresi kaydedildi!', '💾');
+      toastGoster(apiUrl ? 'Google Apps Script bağlantısı kaydedildi!' : 'Yerel depolama moduna geçildi.', '💾');
     }
   </script>
 </body>
