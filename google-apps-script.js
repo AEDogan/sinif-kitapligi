@@ -171,6 +171,9 @@ function istekYonlendir(params, isPost) {
     if (action === "havuzaKitapEkle") {
       return jsonYanit(havuzaKitapEkle(ss, params));
     }
+    if (action === "havuzTopluKitapEkle") {
+      return jsonYanit(havuzTopluKitapEkle(ss, params));
+    }
     if (action === "havuzKitapGuncelle") {
       return jsonYanit(havuzKitapGuncelle(ss, params));
     }
@@ -1002,6 +1005,48 @@ function havuzaKitapEkle(ss, params) {
     ? ` (Öğrencilere ${aktifTarih} tarihinde açılacak)`
     : " (Öğrencilere şu an aktif)";
   return { success: true, message: `"${kitapAdi}" sınıf kütüphanesine eklendi!${tarihMesaji}` };
+}
+
+function havuzTopluKitapEkle(ss, params) {
+  const ogretmen = dogrulaOgretmen(ss, params.pin || params.sifre);
+  if (!ogretmen) return { success: false, message: "Yetkisiz işlem!" };
+
+  const kitaplar = Array.isArray(params.kitaplar) ? params.kitaplar : [];
+  if (kitaplar.length === 0) {
+    return { success: false, message: "Eklenecek kitap listesi boş." };
+  }
+
+  const havuzSayfa = ss.getSheetByName(TABLO_ISIMLERI.KITAP_HAVUZU);
+  const bugun = bugunTarihStr();
+  let eklenenSayi = 0;
+
+  for (let i = 0; i < kitaplar.length; i++) {
+    const item = kitaplar[i];
+    const kitapAdi = String(item.kitapAdi || "").trim();
+    const yazar = String(item.yazar || "Belirtilmemiş").trim();
+    const sayfaSayisi = Math.max(1, Number(item.sayfaSayisi) || 64);
+    const tur = String(item.tur || "Genel").trim();
+    const aktifTarih = item.aktifTarih ? String(item.aktifTarih).trim().slice(0, 10) : bugun;
+    if (!kitapAdi) continue;
+
+    const yeniId = benzersizIdUret("HAVUZ") + "-" + i;
+    havuzSayfa.appendRow([
+      yeniId,
+      guvenliHucreDegeri(kitapAdi),
+      guvenliHucreDegeri(yazar),
+      sayfaSayisi,
+      guvenliHucreDegeri(tur),
+      "Aktif",
+      guvenliHucreDegeri(ogretmen.sinif || "Ortak"),
+      guvenliHucreDegeri(aktifTarih)
+    ]);
+    eklenenSayi++;
+  }
+
+  return {
+    success: true,
+    message: `${eklenenSayi} kitap sınıf kütüphanesine toplu olarak eklendi! 📚`
+  };
 }
 
 function havuzKitapGuncelle(ss, params) {

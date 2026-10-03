@@ -433,6 +433,38 @@ function apiIslemCalistir(params, ip) {
     };
   }
 
+  if (action === 'havuzTopluKitapEkle') {
+    const ogrt = dogrulaOgretmen(params.pin);
+    if (!ogrt) return { success: false, message: 'Yetkisiz işlem!' };
+
+    const liste = Array.isArray(params.kitaplar) ? params.kitaplar : [];
+    if (liste.length === 0) return { success: false, message: 'Eklenecek kitap bulunamadı.' };
+
+    let eklenen = 0;
+    liste.forEach((item, idx) => {
+      const ad = String(item.kitapAdi || '').trim();
+      const yazar = String(item.yazar || 'Belirtilmemiş').trim();
+      const sayfa = Math.max(1, Number(item.sayfaSayisi) || 64);
+      const tur = String(item.tur || 'Genel').trim();
+      const aktifTarih = item.aktifTarih ? String(item.aktifTarih).slice(0, 10) : bugun;
+      if (!ad) return;
+
+      db.havuz.push({
+        kitapId: `${benzersizId('HAVUZ')}-${idx}`,
+        kitapAdi: ad,
+        yazar: yazar,
+        sayfaSayisi: sayfa,
+        tur: tur,
+        sinif: ogrt.sinif || 'Ortak',
+        aktifTarih: aktifTarih
+      });
+      eklenen++;
+    });
+
+    dbKaydet(db);
+    return { success: true, message: `${eklenen} kitap sınıf kütüphanesine toplu olarak eklendi! 📚` };
+  }
+
   if (action === 'havuzKitapGuncelle') {
     const ogrt = dogrulaOgretmen(params.pin);
     if (!ogrt) return { success: false, message: 'Yetkisiz işlem!' };

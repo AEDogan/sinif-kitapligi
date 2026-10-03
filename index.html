@@ -355,9 +355,6 @@
           <button onclick="ogrenciEkleModalAc()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1">
             <span>➕</span> Öğrenci Ekle
           </button>
-          <button onclick="modalAc('modalTopluOgrenciEkle')" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1">
-            <span>📋</span> Toplu Ekle
-          </button>
           <button onclick="ogretmenCikisYap()" title="Öğretmen Panelinden Çıkış Yap" class="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
@@ -728,10 +725,22 @@
   <!-- MODAL 2: KÜTÜPHANEYE KİTAP EKLE / DÜZENLE  -->
   <!-- ========================================== -->
   <div id="modalHavuzKitapEkle" onclick="backdropTiklandi(event, 'modalHavuzKitapEkle')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
       <button onclick="modalKapat('modalHavuzKitapEkle')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
       <h3 id="baslikModalKitapForm" class="text-lg font-extrabold text-slate-800 mb-1">📚 Sınıf Kütüphanesine Kitap Ekle</h3>
-      <p class="text-xs text-slate-500 mb-4">Kitap bilgilerini ve öğrencilere hangi tarihte açılacağını belirleyin.</p>
+      <p class="text-xs text-slate-500 mb-3">Kitap bilgilerini ve öğrencilere hangi tarihte açılacağını belirleyin.</p>
+
+      <!-- Tek Kitap / Toplu Kitap Ekle Seçici -->
+      <div id="kitapEkleModSecici" class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl mb-4">
+        <button type="button" id="btnKitapModTek" onclick="kitapEkleModDegistir('tek')" class="py-2 rounded-xl font-extrabold text-xs transition bg-white text-amber-900 shadow-sm">
+          📖 Tek Kitap Ekle
+        </button>
+        <button type="button" id="btnKitapModToplu" onclick="kitapEkleModDegistir('toplu')" class="py-2 rounded-xl font-extrabold text-xs transition text-slate-600 hover:text-slate-900">
+          📋 Toplu Kitap Ekle
+        </button>
+      </div>
+
+      <!-- TEK KİTAP EKLE / DÜZENLE FORMU -->
       <form id="formHavuzKitapEkle" onsubmit="havuzaKitapKaydet(event)" class="space-y-3">
         <input type="hidden" id="inpHavuzDuzenlenenKitapId" value="" />
         <div>
@@ -776,16 +785,59 @@
           Kütüphaneye Kaydet ✨
         </button>
       </form>
+
+      <!-- TOPLU KİTAP EKLE FORMU -->
+      <form id="formTopluKitapEkle" onsubmit="topluKitapKaydet(event)" class="hidden space-y-3">
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Her satıra bir kitap gelecek şekilde <strong>Kitap Adı - Yazar - Sayfa Sayısı</strong> formatında yazın veya yapıştırın:
+        </p>
+        <textarea id="inpTopluKitapMetin" rows="6" required
+                  placeholder="Küçük Prens - Antoine de Saint-Exupéry - 96&#10;Şeker Portakalı - José Mauro de Vasconcelos - 80&#10;Dedemin Bakkalı - Şermin Yaşar - 85"
+                  class="w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-mono focus:border-amber-500 focus:outline-none"></textarea>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Varsayılan Tür / Kategori</label>
+            <select id="inpTopluKitapTur" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white">
+              <option value="Macera / Keşif">🧭 Macera / Keşif</option>
+              <option value="Masal / Felsefe">🧚 Masal / Felsefe</option>
+              <option value="Bilim Kurgu / Uzay">🪐 Bilim Kurgu / Uzay</option>
+              <option value="Mizah / Eğlence">😂 Mizah / Eğlence</option>
+              <option value="Fantastik / Hayal">🍫 Fantastik / Hayal</option>
+              <option value="Duygusal / Dostluk">💛 Duygusal / Dostluk</option>
+              <option value="Genel">📘 Genel</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">📅 Aktif Olacağı Tarih</label>
+            <input type="date" id="inpTopluKitapAktifTarih" required class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-amber-50/50 text-xs font-bold text-slate-800" />
+          </div>
+        </div>
+        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition text-sm">
+          🚀 Tüm Kitapları Tek Tıkla Kütüphaneye Ekle
+        </button>
+      </form>
     </div>
   </div>
 
   <!-- ========================================== -->
-  <!-- MODAL 3: ÖĞRENCİ EKLE / DÜZENLE            -->
+  <!-- MODAL 3: ÖĞRENCİ EKLE / TOPLU EKLE / DÜZENLE -->
   <!-- ========================================== -->
   <div id="modalOgrenciEkle" onclick="backdropTiklandi(event, 'modalOgrenciEkle')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
       <button onclick="modalKapat('modalOgrenciEkle')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
-      <h3 id="baslikModalOgrenciForm" class="text-lg font-extrabold text-slate-800 mb-4">👧 Öğrenci Bilgileri</h3>
+      <h3 id="baslikModalOgrenciForm" class="text-lg font-extrabold text-slate-800 mb-3">👧 Öğrenci Ekle</h3>
+
+      <!-- Tek Öğrenci / Toplu Öğrenci Ekle Seçici -->
+      <div id="ogrenciEkleModSecici" class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl mb-4">
+        <button type="button" id="btnOgrenciModTek" onclick="ogrenciEkleModDegistir('tek')" class="py-2 rounded-xl font-extrabold text-xs transition bg-white text-emerald-800 shadow-sm">
+          👤 Tek Öğrenci Ekle
+        </button>
+        <button type="button" id="btnOgrenciModToplu" onclick="ogrenciEkleModDegistir('toplu')" class="py-2 rounded-xl font-extrabold text-xs transition text-slate-600 hover:text-slate-900">
+          📋 Toplu Ekle (Liste Yapıştır)
+        </button>
+      </div>
+
+      <!-- TEK ÖĞRENCİ EKLE / DÜZENLE FORMU -->
       <form id="formOgrenciKaydet" onsubmit="ogrenciKaydet(event)" class="space-y-3">
         <input type="hidden" id="inpDuzenlenenOgrId" value="" />
         <div>
@@ -804,20 +856,12 @@
           Öğrenciyi Kaydet
         </button>
       </form>
-    </div>
-  </div>
 
-  <!-- ========================================== -->
-  <!-- MODAL 4: TOPLU ÖĞRENCİ EKLEME              -->
-  <!-- ========================================== -->
-  <div id="modalTopluOgrenciEkle" onclick="backdropTiklandi(event, 'modalTopluOgrenciEkle')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
-      <button onclick="modalKapat('modalTopluOgrenciEkle')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
-      <h3 class="text-lg font-extrabold text-slate-800 mb-1">📋 Toplu Öğrenci Ekle (Sınıf Listesi Yapıştır)</h3>
-      <p class="text-xs text-slate-500 mb-3">
-        Her satıra bir öğrenci gelecek şekilde <strong>OkulNo - Ad Soyad</strong> veya sadece <strong>Ad Soyad</strong> yazın. Sistem her öğrenciye çakışmayan 6 haneli PIN kodunu otomatik atar:
-      </p>
-      <form onsubmit="topluOgrenciKaydet(event)" class="space-y-3">
+      <!-- TOPLU ÖĞRENCİ EKLE FORMU -->
+      <form id="formTopluOgrenciKaydet" onsubmit="topluOgrenciKaydet(event)" class="hidden space-y-3">
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Her satıra bir öğrenci gelecek şekilde <strong>OkulNo - Ad Soyad</strong> veya sadece <strong>Ad Soyad</strong> yazın. Sistem her öğrenciye çakışmayan 6 haneli PIN kodunu otomatik atar:
+        </p>
         <textarea id="inpTopluOgrenciMetin" rows="7" required
                   placeholder="104 - Caner Aydın&#10;105 - Defne Koç&#10;106 - Emirhan Şahin&#10;Yağmur Yıldız"
                   class="w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-mono focus:border-indigo-500 focus:outline-none"></textarea>
@@ -1351,6 +1395,8 @@
       }
 
       ogretmenler.forEach(ogrt => {
+        const pinStr = String(ogrt.pin || '');
+        const gizliPin = '•'.repeat(Math.max(4, pinStr.length));
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition';
         tr.innerHTML = `
@@ -1361,9 +1407,10 @@
             </span>
           </td>
           <td class="py-3.5 px-4">
-            <span class="bg-amber-100 text-amber-900 font-mono font-black px-3 py-1 rounded-lg text-xs tracking-wider">
-              ${escapeHtml(ogrt.pin)}
-            </span>
+            <button type="button" onclick="tabloPinGosterGizle(this, '${escapeHtml(pinStr)}')" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
+              <span class="pin-deger">${gizliPin}</span>
+              <span class="pin-ikon text-[11px] opacity-70">👁️</span>
+            </button>
           </td>
           <td class="py-3.5 px-4 text-xs font-bold text-slate-600">
             ${Number(ogrt.ogrenciSayisi) || 0} Öğrenci • <span class="text-emerald-700">${Number(ogrt.onayliKitapSayisi) || 0} Kitap</span> • ${Number(ogrt.toplamSayfa) || 0} Sayfa
@@ -1379,6 +1426,22 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function tabloPinGosterGizle(btn, gercekPin) {
+      const degerEl = btn.querySelector('.pin-deger');
+      const ikonEl = btn.querySelector('.pin-ikon');
+      if (!degerEl) return;
+      const acikMi = btn.getAttribute('data-acik') === '1';
+      if (acikMi) {
+        degerEl.innerText = '•'.repeat(Math.max(4, String(gercekPin).length));
+        if (ikonEl) ikonEl.innerText = '👁️';
+        btn.setAttribute('data-acik', '0');
+      } else {
+        degerEl.innerText = gercekPin;
+        if (ikonEl) ikonEl.innerText = '🙈';
+        btn.setAttribute('data-acik', '1');
+      }
     }
 
     function adminOgretmenDuzenleBaslat(ogretmenId) {
@@ -2297,7 +2360,7 @@
     function ogretmenPaneliDoldur(data) {
       if (data.ogretmen) {
         document.getElementById('ogretmenPanelSinifRozet').innerText = data.ogretmen.sinif || 'Sınıf Paneli';
-        document.getElementById('ogretmenPanelIsimRozet').innerText = `👩‍🏫 ${data.ogretmen.adSoyad} (PIN: ${data.ogretmen.pin})`;
+        document.getElementById('ogretmenPanelIsimRozet').innerText = `👩‍🏫 ${data.ogretmen.adSoyad}`;
         document.getElementById('headerSinifAdi').innerText = 'Kitap Kurtları';
       }
 
@@ -2463,6 +2526,8 @@
       const tbody = document.getElementById('ogretmenOgrenciTabloBody');
       tbody.innerHTML = '';
       ogretmenOgrenciCache.forEach(ogr => {
+        const pinStr = String(ogr.pin || '');
+        const gizliPin = '•'.repeat(Math.max(6, pinStr.length));
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition';
         tr.innerHTML = `
@@ -2474,9 +2539,10 @@
             </span>
           </td>
           <td class="py-3 px-4">
-            <span class="bg-amber-100 text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs">
-              ${escapeHtml(ogr.pin)}
-            </span>
+            <button type="button" onclick="tabloPinGosterGizle(this, '${escapeHtml(pinStr)}')" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
+              <span class="pin-deger">${gizliPin}</span>
+              <span class="pin-ikon text-[11px] opacity-70">👁️</span>
+            </button>
           </td>
           <td class="py-3 px-4 font-extrabold text-emerald-700">${Number(ogr.okunanKitap) || 0} Kitap</td>
           <td class="py-3 px-4 text-slate-500 font-medium">${Number(ogr.toplamSayfa) || 0} Sayfa</td>
@@ -2589,10 +2655,32 @@
       ogretmenVerileriniYukle();
     }
 
+    function kitapEkleModDegistir(mod) {
+      const tekForm = document.getElementById('formHavuzKitapEkle');
+      const topluForm = document.getElementById('formTopluKitapEkle');
+      const btnTek = document.getElementById('btnKitapModTek');
+      const btnToplu = document.getElementById('btnKitapModToplu');
+      if (mod === 'toplu') {
+        tekForm.classList.add('hidden');
+        topluForm.classList.remove('hidden');
+        btnToplu.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition bg-white text-indigo-700 shadow-sm';
+        btnTek.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition text-slate-600 hover:text-slate-900';
+      } else {
+        topluForm.classList.add('hidden');
+        tekForm.classList.remove('hidden');
+        btnTek.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition bg-white text-indigo-700 shadow-sm';
+        btnToplu.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition text-slate-600 hover:text-slate-900';
+      }
+    }
+
     function kitapEkleModalAc() {
       document.getElementById('formHavuzKitapEkle').reset();
+      document.getElementById('formTopluKitapEkle').reset();
       document.getElementById('inpHavuzDuzenlenenKitapId').value = '';
       document.getElementById('inpHavuzAktifTarih').value = bugunTarihFormatli();
+      document.getElementById('inpTopluKitapAktifTarih').value = bugunTarihFormatli();
+      document.getElementById('kitapEkleModSecici').classList.remove('hidden');
+      kitapEkleModDegistir('tek');
       document.getElementById('baslikModalKitapForm').innerText = '📚 Sınıf Kütüphanesine Kitap Ekle';
       document.getElementById('btnHavuzKitapSubmit').innerText = 'Kütüphaneye Kaydet ✨';
       modalAc('modalHavuzKitapEkle');
@@ -2601,6 +2689,8 @@
     function kitapDuzenleModalAc(kitapId) {
       const k = ogretmenHavuzCache.find(x => x.kitapId === kitapId);
       if (!k) return;
+      document.getElementById('kitapEkleModSecici').classList.add('hidden');
+      kitapEkleModDegistir('tek');
       document.getElementById('inpHavuzDuzenlenenKitapId').value = k.kitapId;
       document.getElementById('inpHavuzAd').value = k.kitapAdi;
       document.getElementById('inpHavuzYazar').value = k.yazar;
@@ -2610,6 +2700,79 @@
       document.getElementById('baslikModalKitapForm').innerText = '✏️ Kitap Bilgilerini & Tarihini Düzenle';
       document.getElementById('btnHavuzKitapSubmit').innerText = 'Değişiklikleri Kaydet 💾';
       modalAc('modalHavuzKitapEkle');
+    }
+
+    async function topluKitapKaydet(e) {
+      e.preventDefault();
+      const hamMetin = document.getElementById('inpTopluKitapMetin').value.trim();
+      if (!hamMetin) return;
+      const tur = document.getElementById('inpTopluKitapTur').value.trim() || 'Genel';
+      const aktifTarih = document.getElementById('inpTopluKitapAktifTarih').value || bugunTarihFormatli();
+
+      const satirlar = hamMetin.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const kitaplar = satirlar.map(satir => {
+        const parcalar = satir.split(/\s*[-–—|;\t]\s*/).map(p => p.trim()).filter(Boolean);
+        let kitapAdi = satir;
+        let yazar = 'Belirtilmemiş';
+        let sayfaSayisi = 64;
+        if (parcalar.length >= 3) {
+          const sonSayi = parseInt(parcalar[parcalar.length - 1], 10);
+          if (!isNaN(sonSayi) && sonSayi > 0) {
+            sayfaSayisi = sonSayi;
+            yazar = parcalar[parcalar.length - 2] || 'Belirtilmemiş';
+            kitapAdi = parcalar.slice(0, parcalar.length - 2).join(' - ');
+          } else {
+            kitapAdi = parcalar[0];
+            yazar = parcalar.slice(1).join(' - ');
+          }
+        } else if (parcalar.length === 2) {
+          const sonSayi = parseInt(parcalar[1], 10);
+          if (!isNaN(sonSayi) && sonSayi > 0) {
+            kitapAdi = parcalar[0];
+            sayfaSayisi = sonSayi;
+          } else {
+            kitapAdi = parcalar[0];
+            yazar = parcalar[1];
+          }
+        }
+        return { kitapAdi, yazar, sayfaSayisi, tur, aktifTarih };
+      });
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: 'havuzTopluKitapEkle',
+            pin: ogretmenSifre,
+            kitaplar: kitaplar
+          });
+          if (data) {
+            toastGoster(data.message, data.success ? '🎉' : '❌');
+            if (data.success) {
+              document.getElementById('formTopluKitapEkle').reset();
+              modalKapat('modalHavuzKitapEkle');
+              ogretmenVerileriniYukle();
+            }
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+
+      kitaplar.forEach((k, idx) => {
+        demoData.havuz.push({
+          kitapId: 'HAVUZ-' + Date.now().toString().slice(-4) + '-' + idx,
+          kitapAdi: k.kitapAdi,
+          yazar: k.yazar,
+          sayfaSayisi: k.sayfaSayisi,
+          tur: k.tur,
+          sinif: aktifOgretmen ? aktifOgretmen.sinif : 'Ortak',
+          aktifTarih: k.aktifTarih
+        });
+      });
+      demoKaydet();
+      document.getElementById('formTopluKitapEkle').reset();
+      modalKapat('modalHavuzKitapEkle');
+      ogretmenVerileriniYukle();
+      toastGoster(`${kitaplar.length} kitap kütüphaneye eklendi! 📚`, '🎉');
     }
 
     async function havuzaKitapKaydet(e) {
@@ -2691,9 +2854,30 @@
       ogretmenVerileriniYukle();
     }
 
+    function ogrenciEkleModDegistir(mod) {
+      const tekForm = document.getElementById('formOgrenciKaydet');
+      const topluForm = document.getElementById('formTopluOgrenciKaydet');
+      const btnTek = document.getElementById('btnOgrenciModTek');
+      const btnToplu = document.getElementById('btnOgrenciModToplu');
+      if (mod === 'toplu') {
+        tekForm.classList.add('hidden');
+        topluForm.classList.remove('hidden');
+        btnToplu.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition bg-white text-indigo-700 shadow-sm';
+        btnTek.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition text-slate-600 hover:text-slate-900';
+      } else {
+        topluForm.classList.add('hidden');
+        tekForm.classList.remove('hidden');
+        btnTek.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition bg-white text-indigo-700 shadow-sm';
+        btnToplu.className = 'flex-1 py-2 rounded-lg text-xs font-extrabold transition text-slate-600 hover:text-slate-900';
+      }
+    }
+
     function ogrenciEkleModalAc() {
       document.getElementById('formOgrenciKaydet').reset();
+      document.getElementById('formTopluOgrenciKaydet').reset();
       document.getElementById('inpDuzenlenenOgrId').value = '';
+      document.getElementById('ogrenciEkleModSecici').classList.remove('hidden');
+      ogrenciEkleModDegistir('tek');
       document.getElementById('baslikModalOgrenciForm').innerText = '👧 Yeni Öğrenci Ekle';
       document.getElementById('btnOgrenciFormSubmit').innerText = 'Öğrenciyi Kaydet';
       modalAc('modalOgrenciEkle');
@@ -2702,6 +2886,8 @@
     function ogrenciDuzenleModalAc(ogrenciId) {
       const ogr = ogretmenOgrenciCache.find(o => o.id === ogrenciId);
       if (!ogr) return;
+      document.getElementById('ogrenciEkleModSecici').classList.add('hidden');
+      ogrenciEkleModDegistir('tek');
       document.getElementById('inpDuzenlenenOgrId').value = ogr.id;
       document.getElementById('inpYeniOgrAd').value = ogr.adSoyad;
       document.getElementById('inpYeniOgrNo').value = ogr.numara || '';
@@ -2806,7 +2992,7 @@
             toastGoster(data.message, data.success ? '🎉' : '❌');
             if (data.success) {
               document.getElementById('inpTopluOgrenciMetin').value = '';
-              modalKapat('modalTopluOgrenciEkle');
+              modalKapat('modalOgrenciEkle');
               ogretmenVerileriniYukle();
             }
             return;
@@ -2833,7 +3019,7 @@
       });
       demoKaydet();
       document.getElementById('inpTopluOgrenciMetin').value = '';
-      modalKapat('modalTopluOgrenciEkle');
+      modalKapat('modalOgrenciEkle');
       ogretmenVerileriniYukle();
       toastGoster(`${eklenecekler.length} öğrenci sınıfınıza eklendi! 🎉`);
     }
