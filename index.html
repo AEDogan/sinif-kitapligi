@@ -875,8 +875,8 @@
         .replace(/'/g, '&#39;');
     }
 
-    // Google Sheets Web App URL (Buraya sabit URL yazılırsa tüm cihazlar otomatik olarak o Google Sheets tablosuna bağlanır)
-    const VARSAYILAN_GOOGLE_SHEETS_API_URL = '';
+    // Google Sheets Web App URL (Tüm cihazlar otomatik olarak bu Google Sheets tablosuna bağlanır)
+    const VARSAYILAN_GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzTuEPh9DQOtOP-xaRi0i1V9bHtoW6o2RCSs3JXvLeG38fUv9qr5cvqlHPA-qaYEaRdww/exec';
     const urlApiParam = new URLSearchParams(window.location.search).get('api');
     if (urlApiParam && urlApiParam.startsWith('https://script.google.com/')) {
       localStorage.setItem('kitapKurtlari_apiUrl', urlApiParam.trim());
