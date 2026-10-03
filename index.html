@@ -875,7 +875,13 @@
         .replace(/'/g, '&#39;');
     }
 
-    let apiUrl = localStorage.getItem('kitapKurtlari_apiUrl') || '';
+    // Google Sheets Web App URL (Buraya sabit URL yazılırsa tüm cihazlar otomatik olarak o Google Sheets tablosuna bağlanır)
+    const VARSAYILAN_GOOGLE_SHEETS_API_URL = '';
+    const urlApiParam = new URLSearchParams(window.location.search).get('api');
+    if (urlApiParam && urlApiParam.startsWith('https://script.google.com/')) {
+      localStorage.setItem('kitapKurtlari_apiUrl', urlApiParam.trim());
+    }
+    let apiUrl = localStorage.getItem('kitapKurtlari_apiUrl') || VARSAYILAN_GOOGLE_SHEETS_API_URL;
     let aktifOgrenci = null;
     let ogretmenSifre = '';
     let aktifOgretmen = null;

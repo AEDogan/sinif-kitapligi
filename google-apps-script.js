@@ -122,6 +122,11 @@ function istekYonlendir(params, isPost) {
   const action = String(params.action || "").trim();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
+  // Tablolar henüz oluşturulmamışsa otomatik olarak ilk kurulumu çalıştır
+  if (!ss.getSheetByName(TABLO_ISIMLERI.AYARLAR) || !ss.getSheetByName(TABLO_ISIMLERI.OGRETMENLER)) {
+    ilkKurulum();
+  }
+
   // Yazma işlemlerinde LockService zorunlu kontrolü
   const okumaIslemleri = ["ogrenciGiris", "ogretmenGiris", "adminGiris"];
   let lock = null;
@@ -195,6 +200,20 @@ function istekYonlendir(params, isPost) {
     }
     if (action === "adminAyarGuncelle") {
       return jsonYanit(adminAyarGuncelle(ss, params));
+    }
+    if (action === "demoSifirla") {
+      if (!dogrulaAdmin(ss, params.adminKullanici, params.adminSifre)) {
+        return jsonYanit({ success: false, message: "Sadece Admin veritabanını sıfırlayabilir!" });
+      }
+      [TABLO_ISIMLERI.OGRETMENLER, TABLO_ISIMLERI.KITAP_HAVUZU, TABLO_ISIMLERI.OGRENCILER, TABLO_ISIMLERI.OKUNAN_KITAPLAR].forEach(ad => {
+        const s = ss.getSheetByName(ad);
+        if (s && s.getLastRow() > 1) {
+          s.deleteRows(2, s.getLastRow() - 1);
+        }
+      });
+      const yanit = adminPanelVerisiOlustur(ss);
+      yanit.message = "Tüm Google Sheets kayıtları temizlendi.";
+      return jsonYanit(yanit);
     }
 
     return jsonYanit({ success: false, message: "Geçersiz işlem isteği." });
