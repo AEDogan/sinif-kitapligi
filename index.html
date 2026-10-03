@@ -1,0 +1,2854 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kitap Kurtları | Dijital Sınıf Kitaplığı</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Short+Stack&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            hand: ['"Short Stack"', 'cursive']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #FFFBEB;
+      background-image: radial-gradient(#FDE68A 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .star-rating input { display: none; }
+    .star-rating label {
+      font-size: 2.2rem;
+      color: #CBD5E1;
+      cursor: pointer;
+      transition: transform 0.15s ease, color 0.15s ease;
+      user-select: none;
+    }
+    .star-rating label:hover,
+    .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label {
+      color: #F59E0B;
+      transform: scale(1.12);
+    }
+    .star-rating {
+      display: flex;
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      gap: 0.35rem;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti-piece {
+      position: fixed;
+      top: 0;
+      width: 12px;
+      height: 12px;
+      z-index: 9999;
+      pointer-events: none;
+      animation: confettiFall 2.6s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col">
+
+  <!-- ÜST NAVİGASYON BAR -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-amber-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="logoTiklandi()">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl shadow-md">
+          📚
+        </div>
+        <div>
+          <h1 id="headerSinifAdi" class="text-xl font-extrabold text-amber-900 tracking-tight font-hand">Kitap Kurtları</h1>
+          <p class="text-xs text-amber-700 font-medium">Dijital Kütüphane & Sayfa Takip Sistemi</p>
+        </div>
+      </div>
+
+      <!-- Rol Seçici (Öğrenci giriş yaptığında kafa karıştırmaması için diğer roller gizlenir) -->
+      <div id="ustNavRolKutusu" class="flex items-center gap-2 text-xs sm:text-sm">
+        <button onclick="ekranDegistir('ogrenciGiris')" id="navOgrenci" class="px-3.5 py-1.5 rounded-full font-bold transition bg-amber-500 text-white shadow-sm">
+          👧 Öğrenci Girişi
+        </button>
+        <button onclick="ekranDegistir('ogretmenGiris')" id="navOgretmen" class="px-3.5 py-1.5 rounded-full font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+          👩‍🏫 Öğretmen
+        </button>
+        <button onclick="ekranDegistir('adminGiris')" id="navAdmin" class="px-3.5 py-1.5 rounded-full font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200">
+          🛡️ Admin
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ANA İÇERİK ALANI -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+
+    <!-- ========================================== -->
+    <!-- EKRAN 1: ÖĞRENCİ / VELİ PIN GİRİŞ EKRANI   -->
+    <!-- ========================================== -->
+    <section id="ekranOgrenciGiris" class="max-w-md mx-auto my-4">
+      <div class="bg-white rounded-3xl shadow-xl border-2 border-amber-200 p-6 sm:p-8 text-center relative overflow-hidden">
+        <div class="w-20 h-20 bg-amber-100 rounded-full mx-auto flex items-center justify-center text-4xl mb-3 shadow-inner">
+          🦉
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-800 font-hand">Hoş Geldin Kitap Kurdu!</h2>
+        <p class="text-slate-600 text-sm mt-1 mb-5">
+          Sınıf kitaplığını görmek ve kaldığın sayfayı kaydetmek için <strong>6 haneli PIN kodunu</strong> gir:
+        </p>
+
+        <form onsubmit="ogrenciGirisYap(event)" class="space-y-4">
+          <div class="flex items-center gap-2">
+            <!-- 6 Eşit Aralıklı Görsel PIN Kutusu + Üstünde Şeffaf Gerçek Input -->
+            <div class="relative flex-1" onclick="document.getElementById('ogrenciPinInput').focus()">
+              <input
+                type="password"
+                id="ogrenciPinInput"
+                maxlength="6"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                autocomplete="off"
+                oninput="ogrenciPinKutulariGuncelle()"
+                onfocus="ogrenciPinKutulariGuncelle()"
+                onblur="ogrenciPinKutulariGuncelle()"
+                required
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div id="ogrenciPinSlotGrid" class="grid grid-cols-6 gap-2">
+                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
+                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
+                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
+                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
+                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
+                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
+              </div>
+            </div>
+
+            <button type="button" onclick="pinGorunurlukDegistir('ogrenciPinInput', 'btnOgrPinGoster')" id="btnOgrPinGoster"
+                    title="PIN Kodunu Göster/Gizle"
+                    class="h-14 w-12 shrink-0 bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-slate-600 hover:text-amber-800 rounded-2xl flex items-center justify-center text-lg transition">
+              👁️
+            </button>
+          </div>
+
+          <!-- Dokunmatik / Çocuk Dostu Hızlı Rakam Tuş Takımı -->
+          <div class="grid grid-cols-5 gap-1.5 pt-1">
+            <button type="button" onclick="numpadTusBas('1')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">1</button>
+            <button type="button" onclick="numpadTusBas('2')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">2</button>
+            <button type="button" onclick="numpadTusBas('3')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">3</button>
+            <button type="button" onclick="numpadTusBas('4')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">4</button>
+            <button type="button" onclick="numpadTusBas('5')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">5</button>
+            <button type="button" onclick="numpadTusBas('6')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">6</button>
+            <button type="button" onclick="numpadTusBas('7')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">7</button>
+            <button type="button" onclick="numpadTusBas('8')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">8</button>
+            <button type="button" onclick="numpadTusBas('9')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">9</button>
+            <button type="button" onclick="numpadTusBas('0')" class="py-2.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-black rounded-xl text-base border border-amber-200 transition">0</button>
+          </div>
+          <div class="flex justify-between items-center">
+            <button type="button" onclick="numpadTekSil()" class="text-xs font-bold text-slate-500 hover:text-amber-700 transition">⬅️ Tek Rakam Sil</button>
+            <button type="button" onclick="numpadTemizle()" class="text-xs font-bold text-slate-400 hover:text-red-600 transition">⌫ Tümünü Temizle</button>
+          </div>
+
+          <button
+            type="submit"
+            id="btnOgrenciGirisSubmit"
+            class="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-lg shadow-lg shadow-amber-500/30 transition transform active:scale-95"
+          >
+            Kitaplığıma Gir 🚀
+          </button>
+        </form>
+
+        <div class="mt-5 pt-4 border-t border-slate-100 text-xs text-slate-500">
+          <p>💡 <strong>PIN kodunu mu unuttun?</strong> Sınıf öğretmeninden hemen öğrenebilirsin!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 2: ÖĞRENCİ KİŞİSEL KİTAPLIK PANELİ   -->
+    <!-- ========================================== -->
+    <section id="ekranOgrenciPanel" class="hidden space-y-6">
+      <!-- Karşılama & Oyunlaştırma (Seviye / Avatar / İlerleme) Kartı -->
+      <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl p-5 sm:p-6 text-white shadow-lg flex flex-col lg:flex-row items-center justify-between gap-5">
+        <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <div class="relative group">
+            <button onclick="avatarSeciciAcKapat()" title="Avatarını Değiştirmek İçin Tıkla!"
+                    class="w-20 h-20 rounded-2xl bg-white/25 backdrop-blur flex items-center justify-center text-4xl shadow-inner border-2 border-white/40 hover:scale-105 transition">
+              <span id="ogrPanelAvatar">🦊</span>
+            </button>
+            <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow whitespace-nowrap pointer-events-none">
+              🎨 Değiştir
+            </span>
+            <!-- Avatar Seçici Popover -->
+            <div id="avatarSeciciKutu" class="hidden absolute left-0 top-24 bg-white text-slate-800 p-3 rounded-2xl shadow-2xl border-2 border-amber-300 z-30 w-56">
+              <p class="text-[11px] font-extrabold text-amber-900 mb-2 text-center">Karakterini Seç:</p>
+              <div class="grid grid-cols-5 gap-1.5 text-2xl">
+                <button type="button" onclick="avatarDegistir('🦊')" class="p-1.5 hover:bg-amber-100 rounded-xl">🦊</button>
+                <button type="button" onclick="avatarDegistir('🐼')" class="p-1.5 hover:bg-amber-100 rounded-xl">🐼</button>
+                <button type="button" onclick="avatarDegistir('🦁')" class="p-1.5 hover:bg-amber-100 rounded-xl">🦁</button>
+                <button type="button" onclick="avatarDegistir('🦉')" class="p-1.5 hover:bg-amber-100 rounded-xl">🦉</button>
+                <button type="button" onclick="avatarDegistir('🦄')" class="p-1.5 hover:bg-amber-100 rounded-xl">🦄</button>
+                <button type="button" onclick="avatarDegistir('🐸')" class="p-1.5 hover:bg-amber-100 rounded-xl">🐸</button>
+                <button type="button" onclick="avatarDegistir('🚀')" class="p-1.5 hover:bg-amber-100 rounded-xl">🚀</button>
+                <button type="button" onclick="avatarDegistir('🐱')" class="p-1.5 hover:bg-amber-100 rounded-xl">🐱</button>
+                <button type="button" onclick="avatarDegistir('🐰')" class="p-1.5 hover:bg-amber-100 rounded-xl">🐰</button>
+                <button type="button" onclick="avatarDegistir('🐨')" class="p-1.5 hover:bg-amber-100 rounded-xl">🐨</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span id="ogrPanelSinifEtiket" class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
+                3. Sınıf
+              </span>
+              <span id="ogrPanelSeviyeRozet" class="text-xs font-extrabold bg-amber-900/40 border border-amber-200/40 px-3 py-0.5 rounded-full font-hand">
+                🌱 Meraklı Okur
+              </span>
+            </div>
+            <h2 id="ogrPanelAd" class="text-2xl sm:text-3xl font-extrabold mt-1 font-hand">Öğrenci Adı</h2>
+            <p id="ogrPanelNumara" class="text-amber-100 text-xs">Okul No: -</p>
+          </div>
+        </div>
+
+        <!-- İstatistik & Görsel Hedef İlerleme Barı -->
+        <div class="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto">
+          <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center border border-white/20 min-w-[105px]">
+            <div id="ogrPanelOnayliSayi" class="text-2xl font-black">0</div>
+            <div class="text-[11px] text-amber-100 font-semibold">Bitirilen Kitap</div>
+          </div>
+          <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center border border-white/20 min-w-[105px]">
+            <div id="ogrPanelToplamSayfa" class="text-2xl font-black">0</div>
+            <div class="text-[11px] text-amber-100 font-semibold">Okunan Sayfa</div>
+          </div>
+          <div class="bg-white/20 backdrop-blur rounded-2xl px-4 py-2.5 text-center border border-white/30 min-w-[170px]">
+            <div id="ogrPanelKulupDurumu" class="text-xs font-extrabold">⏳ Hedef</div>
+            <div class="w-full bg-black/20 h-2 rounded-full overflow-hidden mt-1.5">
+              <div id="ogrPanelHedefBar" class="bg-yellow-300 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div id="ogrPanelHedefAltYazi" class="text-[10px] text-amber-100 font-semibold mt-1">Kitap Kurdu Hedefi</div>
+          </div>
+          <button onclick="ogrenciCikisYap()" title="Güvenli Çıkış Yap" class="px-4 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm transition shadow-md flex items-center gap-2 border-2 border-white/80 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            <span>Çıkış Yap</span>
+            <span class="bg-white text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] font-black">✖</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ŞU AN OKUDUĞUM (DEVAM EDEN) KİTAPLAR -->
+      <div id="alanDevamEdenler" class="hidden bg-amber-100/70 border-2 border-amber-300 rounded-3xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-extrabold text-amber-950 flex items-center gap-2 font-hand">
+            <span>📖</span> Şu An Okuduğum Kitaplar (Kaldığın Sayfayı Güncelle)
+          </h3>
+        </div>
+        <div id="devamEdenlerListesi" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- ÖĞRENCİ ALT SEKMELERİ -->
+      <div class="flex flex-wrap gap-2 border-b border-amber-200 pb-1">
+        <button onclick="ogrTabDegistir('havuz')" id="tabBtnOgrHavuz" class="px-4 py-2.5 font-extrabold text-xs sm:text-sm border-b-2 border-amber-600 text-amber-900 flex items-center gap-1.5">
+          <span>📚</span> Sınıf Kitaplığımız
+        </button>
+        <button onclick="ogrTabDegistir('okunan')" id="tabBtnOgrOkunan" class="px-4 py-2.5 font-extrabold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+          <span>⭐</span> Bitirdiğim & Onaydaki Kitaplar <span id="badgeOgrOkunanSayi" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">0</span>
+        </button>
+      </div>
+
+      <!-- SEKME 1: DİJİTAL KİTAP HAVUZU -->
+      <div id="tabOgrHavuz" class="space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-amber-200 shadow-sm">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button onclick="havuzDurumFiltreSec('tumu')" id="btnFiltreTumu" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500 text-white transition">Tümü</button>
+            <button onclick="havuzDurumFiltreSec('okunmayan')" id="btnFiltreOkunmayan" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">📖 Henüz Okumadıklarım</button>
+            <button onclick="havuzDurumFiltreSec('devam')" id="btnFiltreDevam" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">⏳ Okumaya Devam Ettiklerim</button>
+            <button onclick="havuzDurumFiltreSec('biten')" id="btnFiltreBiten" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">✅ Bitirdiklerim</button>
+          </div>
+          <div class="relative w-full md:w-64">
+            <input type="text" id="inpKitapAra" oninput="havuzFiltrele()" placeholder="🔍 Kitap veya yazar ara..."
+                   class="w-full pl-3.5 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:border-amber-500 focus:outline-none" />
+          </div>
+        </div>
+
+        <div id="kitapHavuzuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- SEKME 2: BİTİRDİĞİM KİTAPLAR LİSTESİ -->
+      <div id="tabOgrOkunan" class="hidden space-y-3">
+        <div id="ogrKitapListesi" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 3: ÖĞRETMEN GİRİŞ EKRANI             -->
+    <!-- ========================================== -->
+    <section id="ekranOgretmenGiris" class="hidden max-w-md mx-auto my-8">
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 text-center">
+        <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-4">
+          👩‍🏫
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-800">Öğretmen Sınıf Paneli</h2>
+        <p class="text-slate-500 text-sm mt-1 mb-6">
+          Sınıfınızın kitaplarını ve öğrencilerini yönetmek için <strong>Öğretmen PIN Kodunuzu</strong> giriniz:
+        </p>
+        <form onsubmit="ogretmenGirisYap(event)" class="space-y-4">
+          <div class="relative">
+            <input
+              type="password"
+              id="ogretmenSifreInput"
+              inputmode="numeric"
+              placeholder="Öğretmen PIN Kodu"
+              required
+              class="w-full text-center text-xl font-extrabold tracking-widest py-3 px-10 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none"
+            />
+            <button type="button" onclick="pinGorunurlukDegistir('ogretmenSifreInput', 'btnOgrtPinGoster')" id="btnOgrtPinGoster"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 p-1.5 text-base">
+              👁️
+            </button>
+          </div>
+          <button
+            type="submit"
+            id="btnOgretmenGirisSubmit"
+            class="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/20 transition"
+          >
+            Sınıf Paneline Giriş Yap
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 4: ÖĞRETMEN YÖNETİM PANELİ           -->
+    <!-- ========================================== -->
+    <section id="ekranOgretmenPanel" class="hidden space-y-6">
+      <!-- Üst Bilgi Çubuğu -->
+      <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+              <span>👩‍🏫</span> Sınıf Öğretmeni Paneli
+            </h2>
+            <span id="ogretmenPanelSinifRozet" class="bg-indigo-100 text-indigo-800 text-xs font-extrabold px-3 py-1 rounded-full">
+              3-A Sınıfı
+            </span>
+            <span id="ogretmenPanelIsimRozet" class="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">
+              Öğretmen
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Sınıfınızdaki öğrencilerin okuma adımlarını, kitap havuzunu ve PIN kodlarını buradan yönetebilirsiniz.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="kitapEkleModalAc()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1">
+            <span>📚</span> Kütüphaneye Kitap Ekle
+          </button>
+          <button onclick="ogrenciEkleModalAc()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1">
+            <span>➕</span> Öğrenci Ekle
+          </button>
+          <button onclick="modalAc('modalTopluOgrenciEkle')" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1">
+            <span>📋</span> Toplu Ekle
+          </button>
+          <button onclick="ogretmenCikisYap()" title="Öğretmen Panelinden Çıkış Yap" class="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl text-xs sm:text-sm transition shadow-sm flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            <span>Çıkış</span>
+            <span class="bg-white text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] font-black">✖</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Öğretmen Sekmeleri (5 Sekme: Onaylananlar Eklendi!) -->
+      <div class="flex flex-wrap gap-2 border-b border-slate-200">
+        <button onclick="ogretmenTabDegistir('bekleyenler')" id="tabBtnBekleyenler" class="px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2">
+          ⏳ Onay Bekleyenler <span id="badgeBekleyenSayi" class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button onclick="ogretmenTabDegistir('devamEdenler')" id="tabBtnDevamEdenler" class="px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+          📖 Şu An Okunanlar <span id="badgeDevamEdenSayi" class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button onclick="ogretmenTabDegistir('onaylananlar')" id="tabBtnOnaylananlar" class="px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+          ✅ Onaylanan Kitaplar <span id="badgeOnaylananSayi" class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button onclick="ogretmenTabDegistir('havuz')" id="tabBtnOgretmenHavuz" class="px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700">
+          📚 Sınıf Kütüphanesi
+        </button>
+        <button onclick="ogretmenTabDegistir('ogrenciler')" id="tabBtnOgrenciler" class="px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700">
+          👧 Sınıf Listesi & PIN'ler
+        </button>
+      </div>
+
+      <!-- Sekme 1: Onay Bekleyen Biten Kitaplar -->
+      <div id="tabOgretmenBekleyenler" class="space-y-3">
+        <div id="bekleyenKitaplarListesi" class="space-y-3"></div>
+      </div>
+
+      <!-- Sekme 2: Şu An Okunan Kitaplar ve Sayfa İlerlemeleri -->
+      <div id="tabOgretmenDevamEdenler" class="hidden space-y-3">
+        <div id="ogretmenDevamEdenlerListesi" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
+
+      <!-- Sekme 3: Onaylanan / Tamamlanan Kitaplar Geçmişi -->
+      <div id="tabOgretmenOnaylananlar" class="hidden space-y-3">
+        <div id="ogretmenOnaylananlarListesi" class="space-y-3"></div>
+      </div>
+
+      <!-- Sekme 4: Kitap Havuzu Yönetimi (Düzenle & Tarih Güncelleme Dahil) -->
+      <div id="tabOgretmenHavuz" class="hidden space-y-4">
+        <div id="ogretmenHavuzListesi" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- Sekme 5: Öğrenci Listesi & PIN Kodları (Düzenle, Sil, PIN Listesi Kopyala) -->
+      <div id="tabOgretmenOgrenciler" class="hidden space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-4 rounded-2xl border border-slate-200">
+          <p class="text-xs text-slate-600 font-medium">
+            💡 Öğrencilerin adını, okul numarasını veya PIN kodunu <strong>✏️ Düzenle</strong> butonuyla değiştirebilirsiniz.
+          </p>
+          <button onclick="sinifPinListesiniKopyala()" class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold rounded-xl text-xs transition flex items-center gap-1.5">
+            <span>📋</span> Veli PIN Listesini Kopyala / Yazdır
+          </button>
+        </div>
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-extrabold text-slate-500 uppercase">
+                  <th class="py-3.5 px-4">No</th>
+                  <th class="py-3.5 px-4">Öğrenci Adı</th>
+                  <th class="py-3.5 px-4">Sınıfı</th>
+                  <th class="py-3.5 px-4">Giriş PIN'i</th>
+                  <th class="py-3.5 px-4">Bitirilen</th>
+                  <th class="py-3.5 px-4">Toplam Sayfa</th>
+                  <th class="py-3.5 px-4 text-right">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="ogretmenOgrenciTabloBody" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 5: ADMİN GİRİŞ EKRANI                -->
+    <!-- ========================================== -->
+    <section id="ekranAdminGiris" class="hidden max-w-md mx-auto my-8">
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 text-center">
+        <div class="w-16 h-16 bg-slate-800 text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-4 shadow-md">
+          🛡️
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-800">Sistem Yöneticisi (Admin)</h2>
+        <p class="text-slate-500 text-sm mt-1 mb-6">
+          Okul genel istatistiklerini, öğretmenleri, sınıfları ve sistem ayarlarını yönetmek için giriş yapın:
+        </p>
+        <form onsubmit="adminGirisYap(event)" class="space-y-4 text-left">
+          <div>
+            <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Admin Kullanıcı Adı</label>
+            <input
+              type="text"
+              id="adminKullaniciInput"
+              placeholder="Kullanıcı adı"
+              required
+              class="w-full py-3 px-4 rounded-xl border-2 border-slate-200 focus:border-slate-800 focus:outline-none font-bold"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Admin Şifresi</label>
+            <input
+              type="password"
+              id="adminSifreInput"
+              placeholder="••••••••"
+              required
+              class="w-full py-3 px-4 rounded-xl border-2 border-slate-200 focus:border-slate-800 focus:outline-none font-bold"
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold shadow-lg transition"
+          >
+            Admin Paneline Giriş Yap 🔐
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- EKRAN 6: ADMİN YÖNETİM PANELİ              -->
+    <!-- ========================================== -->
+    <section id="ekranAdminPanel" class="hidden space-y-6">
+      <div class="bg-slate-900 text-white rounded-3xl p-6 shadow-lg flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-3xl">
+            🛡️
+          </div>
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full">
+              Yönetici Oturumu Aktif
+            </span>
+            <h2 class="text-2xl font-extrabold mt-1">Okul & Öğretmen Yönetim Paneli</h2>
+            <p class="text-slate-400 text-xs">Öğretmen tanımlama, sınıf eşleştirme, okul istatistikleri ve güvenlik ayarları</p>
+          </div>
+        </div>
+        <button onclick="adminCikisYap()" title="Admin Oturumunu Kapat" class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl text-xs sm:text-sm transition shadow-md flex items-center gap-2 border border-red-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+          </svg>
+          <span>Oturumu Kapat</span>
+          <span class="bg-white text-red-600 rounded-full w-4 h-4 inline-flex items-center justify-center text-[10px] font-black">✖</span>
+        </button>
+      </div>
+
+      <!-- Okul Geneli Canlı İstatistik Kartları -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Tanımlı Öğretmen</span>
+          <div id="statOkulOgretmen" class="text-2xl font-black text-indigo-600 mt-1">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Toplam Öğrenci</span>
+          <div id="statOkulOgrenci" class="text-2xl font-black text-emerald-600 mt-1">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Onaylı Bitirilen Kitap</span>
+          <div id="statOkulKitap" class="text-2xl font-black text-amber-600 mt-1">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase">Okul Toplam Sayfa</span>
+          <div id="statOkulSayfa" class="text-2xl font-black text-slate-800 mt-1">0</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol: Yeni Öğretmen & Sınıf Tanımlama Formu -->
+        <div class="space-y-6">
+          <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <h3 id="baslikAdminOgretmenForm" class="text-lg font-extrabold text-slate-800 mb-1 flex items-center gap-2">
+              <span>👩‍🏫</span> Öğretmen & Sınıf Tanımla
+            </h3>
+            <p class="text-xs text-slate-500 mb-5">
+              Öğretmenin adını, bağlı olduğu sınıfı ve giriş yapacağı PIN kodunu belirleyin.
+            </p>
+            <form id="formOgretmenTanimla" onsubmit="adminOgretmenKaydet(event)" class="space-y-4">
+              <input type="hidden" id="inpAdminDuzenlenenOgrtId" value="" />
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Öğretmen Adı Soyadı *</label>
+                <input type="text" id="inpAdminOgrtAd" required placeholder="Örn: Ayşe Yılmaz"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-sm font-semibold" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Bağlı Olduğu Sınıf / Şube *</label>
+                <input type="text" id="inpAdminOgrtSinif" required placeholder="Örn: 3-A Sınıfı"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-sm font-semibold" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Öğretmen Giriş PIN Kodu *</label>
+                <div class="flex gap-2">
+                  <input type="text" id="inpAdminOgrtPin" required maxlength="8" placeholder="Örn: 1234"
+                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none text-sm font-mono font-bold tracking-wider" />
+                  <button type="button" onclick="rastgeleOgretmenPinUret()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shrink-0">
+                    🎲 Üret
+                  </button>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button type="submit" id="btnAdminOgrtKaydet" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl shadow-md transition text-sm">
+                  ➕ Öğretmeni Kaydet
+                </button>
+                <button type="button" id="btnAdminOgrtIptal" onclick="adminOgretmenDuzenlemeIptal()" class="hidden px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm">
+                  İptal
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Okul Ayarları, Admin Şifresi ve Veritabanı Yönetimi (Sadece Admin Görebilir!) -->
+          <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+            <h3 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+              <span>⚙️</span> Okul Hedefi & Güvenlik Ayarları
+            </h3>
+            <form onsubmit="adminAyarlariKaydet(event)" class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Kitap Kurdu Hedef Barajı (Kitap Sayısı)</label>
+                <input type="number" id="inpAdminKulupBaraji" min="1" max="50" value="3" required
+                       class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-bold" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Yeni Admin Kullanıcı Adı</label>
+                <input type="text" id="inpYeniAdminKullanici" value="admin" required
+                       class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-semibold" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Yeni Admin Şifresi</label>
+                <input type="password" id="inpYeniAdminSifre" placeholder="Değiştirmek için yeni şifre yazın"
+                       class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-semibold" />
+              </div>
+              <button type="submit" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-extrabold rounded-xl text-xs transition">
+                💾 Güvenlik & Hedef Ayarlarını Güncelle
+              </button>
+            </form>
+
+            <div class="pt-3 border-t border-slate-100 space-y-2">
+              <label class="block text-xs font-bold text-slate-600">Google Apps Script Web App URL (Bulut Veritabanı Bağlantısı)</label>
+              <div class="flex gap-2">
+                <input type="url" id="inpApiUrl" placeholder="https://script.google.com/macros/s/.../exec"
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+                <button type="button" onclick="apiAyariniKaydet()" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shrink-0">
+                  Kaydet
+                </button>
+              </div>
+              <button type="button" onclick="demoVerileriniSifirlaOnayli()" class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold rounded-xl text-xs transition border border-red-200 mt-2">
+                ⚠️ Tüm Veritabanını Sıfırla (Kayıtları Temizle)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sağ: Tanımlı Öğretmenler ve Sınıf İstatistik Tablosu -->
+        <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+          <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-extrabold text-slate-800">Tanımlı Öğretmenler ve Sınıfları</h3>
+              <p class="text-xs text-slate-500">Her öğretmen kendi PIN kodu ile yalnızca kendi sınıfını yönetir.</p>
+            </div>
+            <span id="badgeAdminOgrtSayi" class="bg-indigo-100 text-indigo-800 text-xs font-extrabold px-3 py-1 rounded-full">0 Öğretmen</span>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-extrabold text-slate-500 uppercase">
+                  <th class="py-3.5 px-4">Öğretmen Adı</th>
+                  <th class="py-3.5 px-4">Sınıfı</th>
+                  <th class="py-3.5 px-4">Giriş PIN</th>
+                  <th class="py-3.5 px-4">Öğrenci / Kitap / Sayfa</th>
+                  <th class="py-3.5 px-4 text-right">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="adminOgretmenTabloBody" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: SAYFA İLERLEMESİ / KİTAP BİTİRME  -->
+  <!-- ========================================== -->
+  <div id="modalKitapBildir" onclick="backdropTiklandi(event, 'modalKitapBildir')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-2 border-amber-300 relative max-h-[92vh] overflow-y-auto">
+      <button onclick="modalKapat('modalKitapBildir')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      
+      <div class="flex items-center gap-3 mb-4">
+        <div id="modalKitapIkonKutu" class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl">📖</div>
+        <div>
+          <span class="text-[11px] font-extrabold uppercase text-amber-600 tracking-wider">Okuma Günlüğüm</span>
+          <h3 id="modalKitapBaslik" class="text-lg font-black text-slate-800 leading-tight">Kitap Adı</h3>
+          <p id="modalKitapDetay" class="text-xs text-slate-500">Yazar • 0 Sayfa</p>
+        </div>
+      </div>
+
+      <form id="formKitapIlerleme" onsubmit="kitapIlerlemesiniGonder(event)" class="space-y-4">
+        <input type="hidden" id="modalKitapId" />
+        <input type="hidden" id="modalToplamSayfaHidden" />
+
+        <!-- Durum Seçici Sekme -->
+        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+          <button type="button" id="btnModDevam" onclick="durumModuSec('devam')" class="py-2.5 rounded-xl font-extrabold text-xs transition bg-white text-slate-800 shadow-sm">
+            📖 Okumaya Devam Ediyorum
+          </button>
+          <button type="button" id="btnModBitirdim" onclick="durumModuSec('bitirdim')" class="py-2.5 rounded-xl font-extrabold text-xs transition text-slate-500 hover:text-slate-800">
+            🎉 Tamamen Bitirdim!
+          </button>
+        </div>
+
+        <!-- Kaldığı Sayfa Giriş Alanı -->
+        <div id="alanSayfaGiris" class="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-extrabold text-amber-950">Şu An Kaçıncı Sayfadasın?</label>
+            <span id="etiketSayfaOran" class="text-xs font-black text-amber-700 bg-amber-200/70 px-2.5 py-0.5 rounded-full">%0</span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <input type="number" id="modalKaldigiSayfa" min="1" oninput="canliIlerlemeHesapla()" required
+                   class="w-full text-center text-2xl font-black py-2.5 px-3 rounded-xl border-2 border-amber-300 focus:border-amber-500 focus:outline-none bg-white" />
+            <span class="text-sm font-bold text-slate-500 shrink-0" id="modalToplamSayfaEtiket">/ 100 Sayfa</span>
+          </div>
+
+          <div class="w-full bg-amber-200/60 h-3 rounded-full overflow-hidden">
+            <div id="canliProgressCubugu" class="bg-gradient-to-r from-amber-500 to-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="sonSayfaBilgiNotu" class="hidden text-[11px] font-extrabold text-emerald-700 text-center">
+            🎉 Son sayfaya ulaştın! Kaydettiğinde kitabın "Bitirildi" olarak öğretmenine gönderilecek!
+          </p>
+        </div>
+
+        <!-- Kitap Bittiyse Yıldız ve Yorum Alanı -->
+        <div id="alanBitisDegerlendirme" class="hidden space-y-3 pt-1">
+          <div class="bg-amber-50/60 p-3 rounded-2xl border border-amber-200/80">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Bu Kitabı Ne Kadar Sevdin?</label>
+            <div class="flex items-center justify-between">
+              <div class="star-rating">
+                <input type="radio" id="star5" name="rating" value="5" checked onchange="yildizDuyguGuncelle(5)" /><label for="star5">★</label>
+                <input type="radio" id="star4" name="rating" value="4" onchange="yildizDuyguGuncelle(4)" /><label for="star4">★</label>
+                <input type="radio" id="star3" name="rating" value="3" onchange="yildizDuyguGuncelle(3)" /><label for="star3">★</label>
+                <input type="radio" id="star2" name="rating" value="2" onchange="yildizDuyguGuncelle(2)" /><label for="star2">★</label>
+                <input type="radio" id="star1" name="rating" value="1" onchange="yildizDuyguGuncelle(1)" /><label for="star1">★</label>
+              </div>
+              <span id="etiketYildizDuygu" class="text-xs font-extrabold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full">
+                🤩 Bayıldım!
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">En Sevdiğin Bölüm / Neler Öğrendin? (1-2 Cümle)</label>
+            <textarea id="modalYorum" rows="2" maxlength="400" placeholder="Örn: Küçük Prens'in tilki ile dostluğu çok güzeldi..."
+                      class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none text-sm"></textarea>
+          </div>
+        </div>
+
+        <button type="submit" id="btnIlerlemeKaydet" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition text-base">
+          Kaldığım Sayfayı Kaydet 💾
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 2: KÜTÜPHANEYE KİTAP EKLE / DÜZENLE  -->
+  <!-- ========================================== -->
+  <div id="modalHavuzKitapEkle" onclick="backdropTiklandi(event, 'modalHavuzKitapEkle')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="modalKapat('modalHavuzKitapEkle')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      <h3 id="baslikModalKitapForm" class="text-lg font-extrabold text-slate-800 mb-1">📚 Sınıf Kütüphanesine Kitap Ekle</h3>
+      <p class="text-xs text-slate-500 mb-4">Kitap bilgilerini ve öğrencilere hangi tarihte açılacağını belirleyin.</p>
+      <form id="formHavuzKitapEkle" onsubmit="havuzaKitapKaydet(event)" class="space-y-3">
+        <input type="hidden" id="inpHavuzDuzenlenenKitapId" value="" />
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Kitap Adı *</label>
+          <input type="text" id="inpHavuzAd" required placeholder="Örn: Küçük Prens" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Yazar *</label>
+          <input type="text" id="inpHavuzYazar" required placeholder="Örn: Antoine de Saint-Exupéry" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Toplam Sayfa Sayısı *</label>
+            <input type="number" id="inpHavuzSayfa" min="1" required placeholder="96" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Tür / Kategori</label>
+            <select id="inpHavuzTur" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold bg-white">
+              <option value="Macera / Keşif">🧭 Macera / Keşif</option>
+              <option value="Masal / Felsefe">🧚 Masal / Felsefe</option>
+              <option value="Bilim Kurgu / Uzay">🪐 Bilim Kurgu / Uzay</option>
+              <option value="Mizah / Eğlence">😂 Mizah / Eğlence</option>
+              <option value="Fantastik / Hayal">🍫 Fantastik / Hayal</option>
+              <option value="Duygusal / Dostluk">💛 Duygusal / Dostluk</option>
+              <option value="Genel">📘 Genel</option>
+            </select>
+          </div>
+        </div>
+        <div class="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-extrabold text-amber-950">📅 Kütüphanede Aktif Olacağı Tarih *</label>
+            <button type="button" onclick="document.getElementById('inpHavuzAktifTarih').value = bugunTarihFormatli()" class="text-[11px] font-bold text-amber-700 hover:underline">
+              Bugün Yap
+            </button>
+          </div>
+          <input type="date" id="inpHavuzAktifTarih" required class="w-full px-3.5 py-2 rounded-xl border border-amber-300 bg-white text-sm font-bold text-slate-800 focus:border-amber-500 focus:outline-none" />
+          <p class="text-[11px] text-amber-800 mt-1.5 leading-snug">
+            💡 İleri bir tarih seçerseniz öğrencileriniz bu kitabı yalnızca <strong>o tarih geldiğinde</strong> kütüphanede görebilir.
+          </p>
+        </div>
+        <button type="submit" id="btnHavuzKitapSubmit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition">
+          Kütüphaneye Kaydet ✨
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 3: ÖĞRENCİ EKLE / DÜZENLE            -->
+  <!-- ========================================== -->
+  <div id="modalOgrenciEkle" onclick="backdropTiklandi(event, 'modalOgrenciEkle')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="modalKapat('modalOgrenciEkle')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      <h3 id="baslikModalOgrenciForm" class="text-lg font-extrabold text-slate-800 mb-4">👧 Öğrenci Bilgileri</h3>
+      <form id="formOgrenciKaydet" onsubmit="ogrenciKaydet(event)" class="space-y-3">
+        <input type="hidden" id="inpDuzenlenenOgrId" value="" />
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Adı Soyadı *</label>
+          <input type="text" id="inpYeniOgrAd" required placeholder="Örn: Elif Yılmaz" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Okul / Sınıf Numarası</label>
+          <input type="text" id="inpYeniOgrNo" placeholder="Örn: 105" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">6 Haneli Giriş PIN Kodu (Boş bırakılırsa benzersiz üretilir)</label>
+          <input type="text" id="inpYeniOgrPin" maxlength="6" inputmode="numeric" placeholder="Örn: 482915" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono font-bold" />
+        </div>
+        <button type="submit" id="btnOgrenciFormSubmit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition">
+          Öğrenciyi Kaydet
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 4: TOPLU ÖĞRENCİ EKLEME              -->
+  <!-- ========================================== -->
+  <div id="modalTopluOgrenciEkle" onclick="backdropTiklandi(event, 'modalTopluOgrenciEkle')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+      <button onclick="modalKapat('modalTopluOgrenciEkle')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      <h3 class="text-lg font-extrabold text-slate-800 mb-1">📋 Toplu Öğrenci Ekle (Sınıf Listesi Yapıştır)</h3>
+      <p class="text-xs text-slate-500 mb-3">
+        Her satıra bir öğrenci gelecek şekilde <strong>OkulNo - Ad Soyad</strong> veya sadece <strong>Ad Soyad</strong> yazın. Sistem her öğrenciye çakışmayan 6 haneli PIN kodunu otomatik atar:
+      </p>
+      <form onsubmit="topluOgrenciKaydet(event)" class="space-y-3">
+        <textarea id="inpTopluOgrenciMetin" rows="7" required
+                  placeholder="104 - Caner Aydın&#10;105 - Defne Koç&#10;106 - Emirhan Şahin&#10;Yağmur Yıldız"
+                  class="w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-mono focus:border-indigo-500 focus:outline-none"></textarea>
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl shadow-md transition text-sm">
+          🚀 Tüm Sınıfı Tek Tıkla Ekle & PIN Üret
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 5: ÖĞRETMEN İADE / GERİ BİLDİRİM NOTU -->
+  <!-- ========================================== -->
+  <div id="modalKitapIade" onclick="backdropTiklandi(event, 'modalKitapIade')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="modalKapat('modalKitapIade')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      <h3 class="text-lg font-extrabold text-slate-800 mb-1">🔄 Öğrenciye Geri Bildirim & İade</h3>
+      <p class="text-xs text-slate-500 mb-4">
+        Kitap silinmez; öğrencinin ekranında <strong>"Devam Ediyor"</strong> listesine geri döner ve yazdığınız yapıcı not öğrenci/veli tarafından görülür:
+      </p>
+      <form onsubmit="kitapIadeGonder(event)" class="space-y-3">
+        <input type="hidden" id="inpIadeIslemId" />
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" onclick="hizliIadeNotuSec('Özeti biraz daha detaylı yazar mısın? 💬')" class="text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-2.5 py-1 rounded-lg border border-amber-200">Özeti detaylandır 💬</button>
+          <button type="button" onclick="hizliIadeNotuSec('Kitabın son bölümünü tekrar gözden geçirip sınıfta bana anlatır mısın? 📖')" class="text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-2.5 py-1 rounded-lg border border-amber-200">Sınıfta özetle 📖</button>
+        </div>
+        <textarea id="inpOgretmenIadeNotu" rows="3" required maxlength="300"
+                  placeholder="Örn: Sevgili Ali, kitabın sonundaki macera hakkında 1-2 cümle daha yorum yazıp tekrar gönderir misin?"
+                  class="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-amber-500 focus:outline-none"></textarea>
+        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition text-sm">
+          🔄 Notla Birlikte Öğrenciye İade Et
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- BİLDİRİM TOAST (Mobil Uyumlu) -->
+  <div id="toast" class="fixed bottom-5 left-4 right-4 sm:left-auto sm:right-5 sm:max-w-md bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl hidden z-50 flex items-center gap-3 transition-all">
+    <span id="toastIcon" class="text-xl">✨</span>
+    <span id="toastMsg" class="text-sm font-bold leading-snug">İşlem tamamlandı</span>
+  </div>
+
+  <!-- JAVASCRIPT UYGULAMA MANTIĞI -->
+  <script>
+    // ========================================================
+    // GÜVENLİK: XSS KORUMASI (HTML & ATTRIBUTE SANITIZER)
+    // ========================================================
+    function escapeHtml(deger) {
+      if (deger === null || deger === undefined) return '';
+      return String(deger)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    let apiUrl = localStorage.getItem('kitapKurtlari_apiUrl') || '';
+    let aktifOgrenci = null;
+    let ogretmenSifre = '';
+    let aktifOgretmen = null;
+    let aktifAdmin = null;
+    let genelHavuz = [];
+    let ogretmenHavuzCache = [];
+    let ogretmenOgrenciCache = [];
+    let adminOgretmenCache = [];
+    let seciliMod = 'devam';
+    let aktifHavuzFiltre = 'tumu';
+
+    function bugunTarihFormatli() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function tarihGorunurFormat(tarihStr) {
+      if (!tarihStr) return 'Hemen Aktif';
+      const parcalar = String(tarihStr).slice(0, 10).split('-');
+      if (parcalar.length !== 3) return String(tarihStr);
+      const aylar = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+      const ayIndex = parseInt(parcalar[1], 10) - 1;
+      const gun = parseInt(parcalar[2], 10);
+      return `${gun} ${aylar[ayIndex] || parcalar[1]} ${parcalar[0]}`;
+    }
+
+    // Eski demo önbelleklerini temizle
+    ['kitapKurtlari_demoData_v4', 'kitapKurtlari_demoData_v5', 'kitapKurtlari_demoData_v6'].forEach(k => localStorage.removeItem(k));
+
+    // Yerel / Çevrimdışı veri deposu (Demo veriler tamamen kaldırıldı, temiz başlangıç)
+    let demoData = JSON.parse(localStorage.getItem('kitapKurtlari_veri_v1')) || {
+      ayarlar: { SinifAdi: 'Kitap Kurtları', KulupBaraji: 3, AdminKullanici: 'admin', AdminSifre: 'admin123' },
+      ogretmenler: [],
+      havuz: [],
+      ogrenciler: [],
+      okunanlar: []
+    };
+
+    function demoKaydet() {
+      localStorage.setItem('kitapKurtlari_veri_v1', JSON.stringify(demoData));
+    }
+
+    // Birleşik API İstek Yöneticisi:
+    // 1. Google Apps Script URL tanımlıysa oraya bağlanır.
+    // 2. Yerel ağda (localhost / 192.168.x.x) çalışıyorsa yerel Node.js (/api) sunucusuna bağlanır.
+    // 3. GitHub Pages (*.github.io) üzerinde Google Apps Script URL henüz girilmemişse tarayıcı veritabanını kullanır.
+    function aktifApiHedefi() {
+      if (apiUrl) return apiUrl;
+      const host = window.location.hostname || '';
+      if (window.location.protocol.startsWith('http') && !host.endsWith('github.io')) return '/api';
+      return '';
+    }
+
+    async function apiIstegiGonder(payload) {
+      const hedef = aktifApiHedefi();
+      if (!hedef) return null;
+      const res = await fetch(hedef, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    }
+
+    // ========================================================
+    // OYUNLAŞTIRMA: KİTAP TÜRÜ GÖRSEL TEMALARI & KONFETİ
+    // ========================================================
+    function kitapTurTemasiAl(tur) {
+      const t = String(tur || '').toLowerCase();
+      if (t.includes('uzay') || t.includes('bilim')) {
+        return { ikon: '🪐', ustRenk: 'from-indigo-500 to-purple-600', etiketRenk: 'bg-indigo-100 text-indigo-800', kenar: 'border-indigo-200 hover:border-indigo-400' };
+      }
+      if (t.includes('masal') || t.includes('felsefe')) {
+        return { ikon: '🧚', ustRenk: 'from-amber-400 to-orange-500', etiketRenk: 'bg-amber-100 text-amber-900', kenar: 'border-amber-200 hover:border-amber-400' };
+      }
+      if (t.includes('mizah') || t.includes('eğlence') || t.includes('günlük')) {
+        return { ikon: '😂', ustRenk: 'from-emerald-400 to-teal-500', etiketRenk: 'bg-emerald-100 text-emerald-900', kenar: 'border-emerald-200 hover:border-emerald-400' };
+      }
+      if (t.includes('fantastik') || t.includes('hayal')) {
+        return { ikon: '🍫', ustRenk: 'from-fuchsia-500 to-pink-500', etiketRenk: 'bg-fuchsia-100 text-fuchsia-900', kenar: 'border-fuchsia-200 hover:border-fuchsia-400' };
+      }
+      if (t.includes('duygusal') || t.includes('dostluk')) {
+        return { ikon: '💛', ustRenk: 'from-rose-400 to-orange-400', etiketRenk: 'bg-rose-100 text-rose-900', kenar: 'border-rose-200 hover:border-rose-400' };
+      }
+      return { ikon: '🧭', ustRenk: 'from-sky-400 to-blue-600', etiketRenk: 'bg-sky-100 text-sky-900', kenar: 'border-sky-200 hover:border-sky-400' };
+    }
+
+    function okurSeviyesiHesapla(onaylananKitap) {
+      const s = Number(onaylananKitap) || 0;
+      if (s === 0) return '🌱 Meraklı Tohum';
+      if (s <= 2) return '🐛 Kitap Kurdu Adayı';
+      if (s <= 4) return '🦊 Süper Kitap Kurdu';
+      if (s <= 8) return '🦉 Bilge Baykuş';
+      return '🚀 Galaksi Okuma Şampiyonu';
+    }
+
+    function konfetiPatlat() {
+      const renkler = ['#F59E0B', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6', '#FBBF24'];
+      for (let i = 0; i < 36; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece rounded-sm';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.backgroundColor = renkler[i % renkler.length];
+        el.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3200);
+      }
+    }
+
+    // ========================================================
+    // GENEL ARAYÜZ & MODAL YARDIMCILARI
+    // ========================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      const inpApi = document.getElementById('inpApiUrl');
+      if (inpApi) inpApi.value = apiUrl;
+      const inpTarih = document.getElementById('inpHavuzAktifTarih');
+      if (inpTarih) inpTarih.value = bugunTarihFormatli();
+
+      // ESC tuşu ile açık modalları kapatma
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          ['modalKitapBildir', 'modalHavuzKitapEkle', 'modalOgrenciEkle', 'modalTopluOgrenciEkle', 'modalKitapIade'].forEach(id => modalKapat(id));
+        }
+      });
+
+      // Oturum hatırlama (Sayfa yenilendiğinde veli/öğrenci tekrar PIN girmek zorunda kalmasın)
+      const kayitliOgrPin = sessionStorage.getItem('kitapKurtlari_aktifOgrPin');
+      const kayitliOgrtPin = sessionStorage.getItem('kitapKurtlari_aktifOgrtPin');
+
+      if (kayitliOgrPin) {
+        document.getElementById('ogrenciPinInput').value = kayitliOgrPin;
+        ogrenciPinKutulariGuncelle();
+        ogrenciGirisYap(null);
+      } else if (kayitliOgrtPin) {
+        document.getElementById('ogretmenSifreInput').value = kayitliOgrtPin;
+        ogretmenGirisYap(null);
+      } else {
+        ogrenciPinKutulariGuncelle();
+        ekranDegistir('ogrenciGiris');
+      }
+    });
+
+    function logoTiklandi() {
+      if (aktifOgrenci) ekranDegistir('ogrenciGiris');
+      else if (aktifOgretmen) ekranDegistir('ogretmenGiris');
+      else if (aktifAdmin) ekranDegistir('adminGiris');
+      else ekranDegistir('ogrenciGiris');
+    }
+
+    function ustNavGuncelle() {
+      const navOgrt = document.getElementById('navOgretmen');
+      const navAdm = document.getElementById('navAdmin');
+      // Öğrenci giriş yaptığında kafa karıştırmaması için Öğretmen ve Admin sekmelerini gizle
+      if (aktifOgrenci) {
+        navOgrt.classList.add('hidden');
+        navAdm.classList.add('hidden');
+      } else {
+        navOgrt.classList.remove('hidden');
+        navAdm.classList.remove('hidden');
+      }
+    }
+
+    function ekranDegistir(hedefEkran) {
+      const ekranlar = [
+        'ekranOgrenciGiris',
+        'ekranOgrenciPanel',
+        'ekranOgretmenGiris',
+        'ekranOgretmenPanel',
+        'ekranAdminGiris',
+        'ekranAdminPanel'
+      ];
+      ekranlar.forEach(e => {
+        const el = document.getElementById(e);
+        if (el) el.classList.add('hidden');
+      });
+
+      const navs = ['navOgrenci', 'navOgretmen', 'navAdmin'];
+      navs.forEach(n => {
+        const el = document.getElementById(n);
+        if (el) el.className = 'px-3.5 py-1.5 rounded-full font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200';
+      });
+
+      ustNavGuncelle();
+
+      if (hedefEkran === 'ogrenciGiris') {
+        if (aktifOgrenci) {
+          document.getElementById('ekranOgrenciPanel').classList.remove('hidden');
+        } else {
+          document.getElementById('ekranOgrenciGiris').classList.remove('hidden');
+        }
+        document.getElementById('navOgrenci').className = 'px-3.5 py-1.5 rounded-full font-bold transition bg-amber-500 text-white shadow-sm';
+      } else if (hedefEkran === 'ogretmenGiris') {
+        if (ogretmenSifre) {
+          document.getElementById('ekranOgretmenPanel').classList.remove('hidden');
+          ogretmenVerileriniYukle();
+        } else {
+          document.getElementById('ekranOgretmenGiris').classList.remove('hidden');
+        }
+        document.getElementById('navOgretmen').className = 'px-3.5 py-1.5 rounded-full font-bold transition bg-indigo-600 text-white shadow-sm';
+      } else if (hedefEkran === 'adminGiris') {
+        if (aktifAdmin) {
+          document.getElementById('ekranAdminPanel').classList.remove('hidden');
+          adminVerileriniYukle();
+        } else {
+          document.getElementById('ekranAdminGiris').classList.remove('hidden');
+        }
+        document.getElementById('navAdmin').className = 'px-3.5 py-1.5 rounded-full font-bold transition bg-slate-900 text-white shadow-sm';
+      }
+    }
+
+    function modalAc(id) { document.getElementById(id).classList.remove('hidden'); }
+    function modalKapat(id) { document.getElementById(id).classList.add('hidden'); }
+    function backdropTiklandi(e, id) {
+      if (e.target && e.target.id === id) modalKapat(id);
+    }
+
+    function toastGoster(msg, icon = '✨') {
+      const t = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      document.getElementById('toastIcon').innerText = icon;
+      t.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.add('hidden'), 3800);
+    }
+
+    let ogrenciPinAcikMi = false;
+
+    function ogrenciPinKutulariGuncelle() {
+      const inp = document.getElementById('ogrenciPinInput');
+      const grid = document.getElementById('ogrenciPinSlotGrid');
+      if (!inp || !grid) return;
+
+      // Yalnızca rakamları tut ve en fazla 6 haneye sınırla
+      const temiz = inp.value.replace(/\D/g, '').slice(0, 6);
+      if (inp.value !== temiz) inp.value = temiz;
+
+      const kutular = grid.querySelectorAll('.pin-slot');
+      kutular.forEach((kutu, idx) => {
+        const karakter = temiz[idx];
+        if (karakter !== undefined) {
+          kutu.innerText = ogrenciPinAcikMi ? karakter : '●';
+          kutu.className = 'pin-slot h-12 sm:h-14 rounded-xl border-2 border-amber-500 bg-white flex items-center justify-center text-xl sm:text-2xl font-black text-amber-900 shadow-sm transition-all scale-[1.02]';
+        } else if (idx === temiz.length) {
+          kutu.innerText = '•';
+          kutu.className = 'pin-slot h-12 sm:h-14 rounded-xl border-2 border-amber-400 bg-amber-50 flex items-center justify-center text-xl sm:text-2xl font-black text-amber-400 transition-all';
+        } else {
+          kutu.innerText = '•';
+          kutu.className = 'pin-slot h-12 sm:h-14 rounded-xl border-2 border-amber-200 bg-amber-50/60 flex items-center justify-center text-xl sm:text-2xl font-black text-amber-300 transition-all';
+        }
+      });
+    }
+
+    function pinGorunurlukDegistir(inputId, btnId) {
+      const inp = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      if (inputId === 'ogrenciPinInput') {
+        ogrenciPinAcikMi = !ogrenciPinAcikMi;
+        btn.innerText = ogrenciPinAcikMi ? '🙈' : '👁️';
+        ogrenciPinKutulariGuncelle();
+        return;
+      }
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.innerText = '🙈';
+      } else {
+        inp.type = 'password';
+        btn.innerText = '👁️';
+      }
+    }
+
+    function numpadTusBas(rakam) {
+      const inp = document.getElementById('ogrenciPinInput');
+      if (inp.value.length < 6) {
+        inp.value += rakam;
+        ogrenciPinKutulariGuncelle();
+      }
+    }
+
+    function numpadTekSil() {
+      const inp = document.getElementById('ogrenciPinInput');
+      inp.value = inp.value.slice(0, -1);
+      ogrenciPinKutulariGuncelle();
+    }
+
+    function numpadTemizle() {
+      document.getElementById('ogrenciPinInput').value = '';
+      ogrenciPinKutulariGuncelle();
+    }
+
+    function ogrTabDegistir(tab) {
+      const tabHavuz = document.getElementById('tabOgrHavuz');
+      const tabOkunan = document.getElementById('tabOgrOkunan');
+      const btnHavuz = document.getElementById('tabBtnOgrHavuz');
+      const btnOkunan = document.getElementById('tabBtnOgrOkunan');
+
+      if (tab === 'havuz') {
+        tabHavuz.classList.remove('hidden');
+        tabOkunan.classList.add('hidden');
+        btnHavuz.className = 'px-4 py-2.5 font-extrabold text-xs sm:text-sm border-b-2 border-amber-600 text-amber-900 flex items-center gap-1.5';
+        btnOkunan.className = 'px-4 py-2.5 font-extrabold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5';
+      } else {
+        tabHavuz.classList.add('hidden');
+        tabOkunan.classList.remove('hidden');
+        btnOkunan.className = 'px-4 py-2.5 font-extrabold text-xs sm:text-sm border-b-2 border-amber-600 text-amber-900 flex items-center gap-1.5';
+        btnHavuz.className = 'px-4 py-2.5 font-extrabold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5';
+      }
+    }
+
+    // ========================================================
+    // 0. ADMİN YÖNETİMİ (ÖĞRETMEN, SINIF, İSTATİSTİK & AYARLAR)
+    // ========================================================
+    function rastgeleOgretmenPinUret() {
+      const mevcutPinler = new Set(adminOgretmenCache.map(o => String(o.pin).trim()));
+      for (let i = 0; i < 200; i++) {
+        const pin = Math.floor(1000 + Math.random() * 9000).toString();
+        if (!mevcutPinler.has(pin)) {
+          document.getElementById('inpAdminOgrtPin').value = pin;
+          return;
+        }
+      }
+    }
+
+    async function adminGirisYap(e) {
+      if (e) e.preventDefault();
+      const kullanici = document.getElementById('adminKullaniciInput').value.trim();
+      const sifre = document.getElementById('adminSifreInput').value.trim();
+
+      if (!kullanici || !sifre) {
+        toastGoster('Lütfen admin kullanıcı adı ve şifresini giriniz.', '⚠️');
+        return;
+      }
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'adminGiris', kullaniciAdi: kullanici, sifre: sifre });
+          if (data && data.success) {
+            aktifAdmin = { kullaniciAdi: kullanici, sifre: sifre };
+            document.getElementById('ekranAdminGiris').classList.add('hidden');
+            document.getElementById('ekranAdminPanel').classList.remove('hidden');
+            adminPaneliDoldur(data);
+            toastGoster('Admin paneline hoş geldiniz!', '🛡️');
+            return;
+          } else if (data) {
+            toastGoster(data.message || 'Hatalı admin bilgileri!', '❌');
+            return;
+          }
+        } catch (err) {
+          toastGoster('Sunucu bağlantısı kurulamadı, çevrimdışı moda geçiliyor.', '⚠️');
+        }
+      }
+
+      if (kullanici === demoData.ayarlar.AdminKullanici && sifre === demoData.ayarlar.AdminSifre) {
+        aktifAdmin = { kullaniciAdi: kullanici, sifre: sifre };
+        document.getElementById('ekranAdminGiris').classList.add('hidden');
+        document.getElementById('ekranAdminPanel').classList.remove('hidden');
+        adminVerileriniYukle();
+        toastGoster('Admin paneline hoş geldiniz!', '🛡️');
+      } else {
+        toastGoster('Hatalı Admin kullanıcı adı veya şifresi!', '❌');
+      }
+    }
+
+    function adminCikisYap() {
+      aktifAdmin = null;
+      document.getElementById('adminKullaniciInput').value = '';
+      document.getElementById('adminSifreInput').value = '';
+      ekranDegistir('adminGiris');
+      toastGoster('Admin oturumu kapatıldı.');
+    }
+
+    async function adminVerileriniYukle() {
+      if (!aktifAdmin) return;
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: 'adminGiris',
+            kullaniciAdi: aktifAdmin.kullaniciAdi,
+            sifre: aktifAdmin.sifre
+          });
+          if (data && data.success) {
+            adminPaneliDoldur(data);
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      // Çevrimdışı hesaplama
+      const zengin = (demoData.ogretmenler || []).map(ogrt => {
+        const sinifOgr = demoData.ogrenciler.filter(o => o.sinif === ogrt.sinif || o.ogretmenId === ogrt.id);
+        const ids = new Set(sinifOgr.map(o => o.id));
+        let onayli = 0;
+        let sayfa = 0;
+        demoData.okunanlar.forEach(k => {
+          if (!ids.has(k.ogrenciId)) return;
+          if (k.durum === 'Onaylandı') { onayli++; sayfa += (Number(k.toplamSayfa) || 0); }
+          else if (k.durum === 'Onay Bekliyor') { sayfa += (Number(k.toplamSayfa) || 0); }
+          else if (k.durum === 'Devam Ediyor') { sayfa += (Number(k.kaldigiSayfa) || 0); }
+        });
+        return { ...ogrt, ogrenciSayisi: sinifOgr.length, onayliKitapSayisi: onayli, toplamSayfa: sayfa };
+      });
+
+      adminPaneliDoldur({
+        ogretmenler: zengin,
+        okulIstatistik: {
+          ogretmenSayisi: zengin.length,
+          ogrenciSayisi: demoData.ogrenciler.length,
+          onayliKitapSayisi: demoData.okunanlar.filter(k => k.durum === 'Onaylandı').length,
+          toplamSayfa: zengin.reduce((acc, x) => acc + x.toplamSayfa, 0),
+          kulupBaraji: demoData.ayarlar.KulupBaraji || 3
+        }
+      });
+    }
+
+    function adminPaneliDoldur(data) {
+      const ogretmenler = data.ogretmenler || [];
+      adminOgretmenCache = ogretmenler;
+
+      const ist = data.okulIstatistik || {};
+      document.getElementById('statOkulOgretmen').innerText = ist.ogretmenSayisi ?? ogretmenler.length;
+      document.getElementById('statOkulOgrenci').innerText = ist.ogrenciSayisi ?? 0;
+      document.getElementById('statOkulKitap').innerText = ist.onayliKitapSayisi ?? 0;
+      document.getElementById('statOkulSayfa').innerText = ist.toplamSayfa ?? 0;
+      if (ist.kulupBaraji) document.getElementById('inpAdminKulupBaraji').value = ist.kulupBaraji;
+      if (aktifAdmin) document.getElementById('inpYeniAdminKullanici').value = aktifAdmin.kullaniciAdi;
+
+      const tbody = document.getElementById('adminOgretmenTabloBody');
+      document.getElementById('badgeAdminOgrtSayi').innerText = `${ogretmenler.length} Öğretmen`;
+      tbody.innerHTML = '';
+
+      if (ogretmenler.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 text-center text-slate-400 font-bold">
+              Henüz tanımlı öğretmen bulunmuyor. Soldaki formdan ekleyebilirsiniz.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      ogretmenler.forEach(ogrt => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition';
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-black text-slate-800">👩‍🏫 ${escapeHtml(ogrt.adSoyad)}</td>
+          <td class="py-3.5 px-4">
+            <span class="bg-indigo-50 text-indigo-700 font-extrabold px-2.5 py-1 rounded-full text-xs border border-indigo-200">
+              ${escapeHtml(ogrt.sinif)}
+            </span>
+          </td>
+          <td class="py-3.5 px-4">
+            <span class="bg-amber-100 text-amber-900 font-mono font-black px-3 py-1 rounded-lg text-xs tracking-wider">
+              ${escapeHtml(ogrt.pin)}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-xs font-bold text-slate-600">
+            ${Number(ogrt.ogrenciSayisi) || 0} Öğrenci • <span class="text-emerald-700">${Number(ogrt.onayliKitapSayisi) || 0} Kitap</span> • ${Number(ogrt.toplamSayfa) || 0} Sayfa
+          </td>
+          <td class="py-3.5 px-4 text-right space-x-1">
+            <button onclick="adminOgretmenDuzenleBaslat('${escapeHtml(ogrt.id)}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
+              ✏️ Düzenle
+            </button>
+            <button onclick="adminOgretmenSil('${escapeHtml(ogrt.id)}')" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
+              🗑️ Sil
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function adminOgretmenDuzenleBaslat(ogretmenId) {
+      const ogrt = adminOgretmenCache.find(o => o.id === ogretmenId);
+      if (!ogrt) return;
+      document.getElementById('inpAdminDuzenlenenOgrtId').value = ogrt.id;
+      document.getElementById('inpAdminOgrtAd').value = ogrt.adSoyad;
+      document.getElementById('inpAdminOgrtSinif').value = ogrt.sinif;
+      document.getElementById('inpAdminOgrtPin').value = ogrt.pin;
+      document.getElementById('baslikAdminOgretmenForm').innerHTML = '<span>✏️</span> Öğretmen Bilgilerini Düzenle';
+      document.getElementById('btnAdminOgrtKaydet').innerText = '💾 Değişiklikleri Kaydet';
+      document.getElementById('btnAdminOgrtIptal').classList.remove('hidden');
+    }
+
+    function adminOgretmenDuzenlemeIptal() {
+      document.getElementById('formOgretmenTanimla').reset();
+      document.getElementById('inpAdminDuzenlenenOgrtId').value = '';
+      document.getElementById('baslikAdminOgretmenForm').innerHTML = '<span>👩‍🏫</span> Öğretmen & Sınıf Tanımla';
+      document.getElementById('btnAdminOgrtKaydet').innerText = '➕ Öğretmeni Kaydet';
+      document.getElementById('btnAdminOgrtIptal').classList.add('hidden');
+    }
+
+    async function adminOgretmenKaydet(e) {
+      e.preventDefault();
+      if (!aktifAdmin) return;
+
+      const duzenlenenId = document.getElementById('inpAdminDuzenlenenOgrtId').value.trim();
+      const adSoyad = document.getElementById('inpAdminOgrtAd').value.trim();
+      const sinif = document.getElementById('inpAdminOgrtSinif').value.trim();
+      const pin = document.getElementById('inpAdminOgrtPin').value.trim();
+
+      const islem = duzenlenenId ? 'ogretmenGuncelle' : 'ogretmenEkle';
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: islem,
+            adminKullanici: aktifAdmin.kullaniciAdi,
+            adminSifre: aktifAdmin.sifre,
+            ogretmenId: duzenlenenId,
+            adSoyad: adSoyad,
+            sinif: sinif,
+            pin: pin
+          });
+          if (data) {
+            toastGoster(data.message, data.success ? '✅' : '❌');
+            if (data.success) {
+              adminOgretmenDuzenlemeIptal();
+              adminPaneliDoldur(data);
+            }
+            return;
+          }
+        } catch (err) {
+          toastGoster('Bağlantı hatası.', '❌');
+        }
+      } else {
+        const cakisma = demoData.ogretmenler.some(o => o.id !== duzenlenenId && o.pin === pin);
+        if (cakisma) {
+          toastGoster('Bu PIN kodu başka bir öğretmende kullanılıyor!', '❌');
+          return;
+        }
+        if (duzenlenenId) {
+          const ogrt = demoData.ogretmenler.find(o => o.id === duzenlenenId);
+          if (ogrt) {
+            const eskiSinif = ogrt.sinif;
+            ogrt.adSoyad = adSoyad;
+            ogrt.sinif = sinif;
+            ogrt.pin = pin;
+            if (eskiSinif !== sinif) {
+              demoData.ogrenciler.forEach(o => { if (o.sinif === eskiSinif) o.sinif = sinif; });
+              demoData.havuz.forEach(k => { if (k.sinif === eskiSinif) k.sinif = sinif; });
+            }
+          }
+        } else {
+          demoData.ogretmenler.push({ id: 'OGRT-' + Date.now().toString().slice(-4), adSoyad, sinif, pin });
+        }
+        demoKaydet();
+        adminOgretmenDuzenlemeIptal();
+        adminVerileriniYukle();
+        toastGoster('Öğretmen kaydedildi!', '✅');
+      }
+    }
+
+    async function adminOgretmenSil(ogretmenId) {
+      if (!aktifAdmin) return;
+      if (!confirm('Bu öğretmeni sistemden silmek istediğinize emin misiniz?')) return;
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: 'ogretmenSil',
+            adminKullanici: aktifAdmin.kullaniciAdi,
+            adminSifre: aktifAdmin.sifre,
+            ogretmenId: ogretmenId
+          });
+          if (data) {
+            toastGoster(data.message);
+            adminPaneliDoldur(data);
+            return;
+          }
+        } catch (err) {
+          toastGoster('Hata oluştu.', '❌');
+        }
+      } else {
+        demoData.ogretmenler = demoData.ogretmenler.filter(o => o.id !== ogretmenId);
+        demoKaydet();
+        adminVerileriniYukle();
+        toastGoster('Öğretmen kaydı silindi.');
+      }
+    }
+
+    async function adminAyarlariKaydet(e) {
+      e.preventDefault();
+      if (!aktifAdmin) return;
+
+      const yeniKullanici = document.getElementById('inpYeniAdminKullanici').value.trim();
+      const yeniSifre = document.getElementById('inpYeniAdminSifre').value.trim() || aktifAdmin.sifre;
+      const yeniBaraj = Math.max(1, Number(document.getElementById('inpAdminKulupBaraji').value) || 3);
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: 'adminAyarGuncelle',
+            adminKullanici: aktifAdmin.kullaniciAdi,
+            adminSifre: aktifAdmin.sifre,
+            yeniAdminKullanici: yeniKullanici,
+            yeniAdminSifre: yeniSifre,
+            kulupBaraji: yeniBaraj
+          });
+          if (data) {
+            toastGoster(data.message, data.success ? '✅' : '❌');
+            if (data.success && data.yeniAdmin) {
+              aktifAdmin = data.yeniAdmin;
+              document.getElementById('inpYeniAdminSifre').value = '';
+            }
+            return;
+          }
+        } catch (err) {
+          toastGoster('Hata oluştu.', '❌');
+        }
+      } else {
+        demoData.ayarlar.AdminKullanici = yeniKullanici;
+        demoData.ayarlar.AdminSifre = yeniSifre;
+        demoData.ayarlar.KulupBaraji = yeniBaraj;
+        aktifAdmin = { kullaniciAdi: yeniKullanici, sifre: yeniSifre };
+        demoKaydet();
+        toastGoster('Ayarlar güncellendi!', '✅');
+      }
+    }
+
+    async function demoVerileriniSifirlaOnayli() {
+      if (!aktifAdmin) return;
+      if (!confirm('DİKKAT: Tüm öğrenci, öğretmen ve kitap kayıtları silinerek sistem sıfırlanacak. Emin misiniz?')) return;
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: 'demoSifirla',
+            adminKullanici: aktifAdmin.kullaniciAdi,
+            adminSifre: aktifAdmin.sifre
+          });
+          if (data && data.success) {
+            toastGoster(data.message, '🔄');
+            adminPaneliDoldur(data);
+            return;
+          }
+        } catch (e) {}
+      }
+      localStorage.removeItem('kitapKurtlari_veri_v1');
+      location.reload();
+    }
+
+    // ========================================================
+    // 1. ÖĞRENCİ GİRİŞİ, AVATAR & KİTAPLIK GÖRÜNÜMÜ
+    // ========================================================
+    async function ogrenciGirisYap(e) {
+      if (e) e.preventDefault();
+      const pin = document.getElementById('ogrenciPinInput').value.trim();
+      if (!pin) {
+        toastGoster('Lütfen 6 haneli PIN kodunu gir!', '⚠️');
+        return;
+      }
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'ogrenciGiris', pin: pin });
+          if (data && data.success) {
+            sessionStorage.setItem('kitapKurtlari_aktifOgrPin', pin);
+            const bugun = bugunTarihFormatli();
+            genelHavuz = (data.havuz || []).filter(k => !k.aktifTarih || String(k.aktifTarih).slice(0, 10) <= bugun);
+            aktifOgrenci = {
+              ...data.ogrenci,
+              pin: pin,
+              istatistik: data.istatistik,
+              devamEdenler: data.devamEdenler || [],
+              tamamlananlar: data.tamamlananlar || []
+            };
+            ogrenciPaneliniGuncelle();
+            return;
+          } else if (data) {
+            sessionStorage.removeItem('kitapKurtlari_aktifOgrPin');
+            toastGoster(data.message, '❌');
+            return;
+          }
+        } catch (err) {
+          toastGoster('Çevrimdışı modda giriş yapılıyor.', '⚠️');
+        }
+      }
+
+      ogrenciDemoGiris(pin);
+    }
+
+    function ogrenciDemoGiris(pin) {
+      const ogr = demoData.ogrenciler.find(o => o.pin === pin);
+      if (!ogr) {
+        sessionStorage.removeItem('kitapKurtlari_aktifOgrPin');
+        toastGoster('Hatalı PIN! Lütfen tekrar dene veya öğretmeninden öğren.', '❌');
+        return;
+      }
+      sessionStorage.setItem('kitapKurtlari_aktifOgrPin', pin);
+      const ogrt = demoData.ogretmenler.find(t => t.id === ogr.ogretmenId || t.sinif === ogr.sinif);
+      const ogrSinif = ogr.sinif || (ogrt ? ogrt.sinif : demoData.ayarlar.SinifAdi);
+      const bugun = bugunTarihFormatli();
+
+      genelHavuz = demoData.havuz.filter(k => {
+        const sinifUygun = !k.sinif || k.sinif === 'Ortak' || k.sinif === ogrSinif;
+        const tarihUygun = !k.aktifTarih || String(k.aktifTarih).slice(0, 10) <= bugun;
+        return sinifUygun && tarihUygun;
+      });
+
+      const ogrKayitlar = demoData.okunanlar.filter(k => k.ogrenciId === ogr.id);
+      const devamEdenler = ogrKayitlar.filter(k => k.durum === 'Devam Ediyor');
+      const tamamlananlar = ogrKayitlar.filter(k => k.durum === 'Onaylandı' || k.durum === 'Onay Bekliyor');
+
+      const onayliSayi = tamamlananlar.filter(k => k.durum === 'Onaylandı').length;
+      let toplamSayfa = 0;
+      // Hem Onaylandı hem Onay Bekliyor sayfaları toplama dahildir (Sayfa sayısı 0'a düşmez!)
+      tamamlananlar.forEach(k => {
+        toplamSayfa += Math.max(1, Number(k.toplamSayfa) || 1);
+      });
+      devamEdenler.forEach(k => {
+        toplamSayfa += Math.max(0, Number(k.kaldigiSayfa) || 0);
+      });
+
+      aktifOgrenci = {
+        id: ogr.id,
+        adSoyad: ogr.adSoyad,
+        numara: ogr.numara,
+        pin: ogr.pin,
+        sinif: ogrSinif,
+        avatar: ogr.avatar || '🦊',
+        ogretmenAdi: ogrt ? ogrt.adSoyad : '',
+        istatistik: {
+          onaylananKitap: onayliSayi,
+          toplamSayfa: toplamSayfa,
+          kulupBaraji: demoData.ayarlar.KulupBaraji || 3,
+          kulupteMi: onayliSayi >= (demoData.ayarlar.KulupBaraji || 3),
+          sinifAdi: ogrSinif,
+          ogretmenAdi: ogrt ? ogrt.adSoyad : ''
+        },
+        devamEdenler: devamEdenler,
+        tamamlananlar: tamamlananlar
+      };
+      ogrenciPaneliniGuncelle();
+    }
+
+    function avatarSeciciAcKapat() {
+      document.getElementById('avatarSeciciKutu').classList.toggle('hidden');
+    }
+
+    async function avatarDegistir(yeniAvatar) {
+      document.getElementById('avatarSeciciKutu').classList.add('hidden');
+      if (!aktifOgrenci) return;
+      aktifOgrenci.avatar = yeniAvatar;
+      document.getElementById('ogrPanelAvatar').innerText = yeniAvatar;
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'ogrenciAvatarGuncelle', pin: aktifOgrenci.pin, avatar: yeniAvatar });
+          if (data && data.message) toastGoster(data.message, yeniAvatar);
+          return;
+        } catch (e) {}
+      }
+      const ogr = demoData.ogrenciler.find(o => o.id === aktifOgrenci.id);
+      if (ogr) {
+        ogr.avatar = yeniAvatar;
+        demoKaydet();
+      }
+      toastGoster(`Karakterin ${yeniAvatar} olarak güncellendi!`, yeniAvatar);
+    }
+
+    function ogrenciPaneliniGuncelle() {
+      document.getElementById('ekranOgrenciGiris').classList.add('hidden');
+      document.getElementById('ekranOgrenciPanel').classList.remove('hidden');
+      ustNavGuncelle();
+
+      const sinifAdi = aktifOgrenci.sinif || (aktifOgrenci.istatistik && aktifOgrenci.istatistik.sinifAdi) || '3. Sınıf';
+      const ogrtAdi = aktifOgrenci.ogretmenAdi || (aktifOgrenci.istatistik && aktifOgrenci.istatistik.ogretmenAdi) || '';
+      document.getElementById('ogrPanelSinifEtiket').innerText = ogrtAdi ? `${sinifAdi} • 👩‍🏫 ${ogrtAdi}` : sinifAdi;
+      document.getElementById('headerSinifAdi').innerText = 'Kitap Kurtları';
+
+      document.getElementById('ogrPanelAvatar').innerText = aktifOgrenci.avatar || '🦊';
+      document.getElementById('ogrPanelAd').innerText = aktifOgrenci.adSoyad;
+      document.getElementById('ogrPanelNumara').innerText = `Okul No: ${aktifOgrenci.numara || '-'}`;
+
+      const okunan = Number(aktifOgrenci.istatistik.onaylananKitap) || 0;
+      const baraj = Math.max(1, Number(aktifOgrenci.istatistik.kulupBaraji) || 3);
+
+      document.getElementById('ogrPanelOnayliSayi').innerText = okunan;
+      document.getElementById('ogrPanelToplamSayfa').innerText = Number(aktifOgrenci.istatistik.toplamSayfa) || 0;
+      document.getElementById('ogrPanelSeviyeRozet').innerText = okurSeviyesiHesapla(okunan);
+      document.getElementById('badgeOgrOkunanSayi').innerText = aktifOgrenci.tamamlananlar.length;
+
+      const hedefYuzde = Math.min(100, Math.round((okunan / baraj) * 100));
+      document.getElementById('ogrPanelHedefBar').style.width = `${hedefYuzde}%`;
+      const kulupEl = document.getElementById('ogrPanelKulupDurumu');
+      const altYaziEl = document.getElementById('ogrPanelHedefAltYazi');
+
+      if (okunan >= baraj) {
+        kulupEl.innerHTML = `🏆 Hedef Tamamlandı! (${okunan}/${baraj})`;
+        altYaziEl.innerText = 'Süper Kitap Kurdu Ödülü! 🌟';
+      } else {
+        const kalan = baraj - okunan;
+        kulupEl.innerHTML = `🎯 Hedefe ${kalan} kitap kaldı (${okunan}/${baraj})`;
+        altYaziEl.innerText = `%${hedefYuzde} tamamlandı`;
+      }
+
+      // 1. Devam Eden Kitaplar (Öğretmen iade notu ve son okuma tarihi dahil)
+      const alanDevam = document.getElementById('alanDevamEdenler');
+      const listeDevam = document.getElementById('devamEdenlerListesi');
+      listeDevam.innerHTML = '';
+
+      if (aktifOgrenci.devamEdenler.length > 0) {
+        alanDevam.classList.remove('hidden');
+        aktifOgrenci.devamEdenler.forEach(k => {
+          const topSayfa = Math.max(1, Number(k.toplamSayfa) || 1);
+          const kalSayfa = Math.min(topSayfa, Math.max(0, Number(k.kaldigiSayfa) || 0));
+          const yuzde = Math.min(100, Math.round((kalSayfa / topSayfa) * 100));
+
+          const ogretmenNotuHtml = k.ogretmenNotu
+            ? `<div class="mt-2.5 bg-amber-50 border border-amber-300 text-amber-950 rounded-xl p-2.5 text-xs">
+                 <span class="font-extrabold">👩‍🏫 Öğretmeninin Notu:</span> “${escapeHtml(k.ogretmenNotu)}”
+               </div>`
+            : '';
+
+          const card = document.createElement('div');
+          card.className = 'bg-white p-4 rounded-2xl border-2 border-amber-300 shadow-sm flex flex-col justify-between';
+          card.innerHTML = `
+            <div>
+              <div class="flex justify-between items-start gap-2">
+                <h4 class="font-black text-slate-800 text-base">${escapeHtml(k.kitapAdi)}</h4>
+                <span class="text-xs font-black text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full shrink-0">%${yuzde}</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(k.yazar)} ${k.tarih ? '• Son okuma: ' + escapeHtml(k.tarih) : ''}</p>
+              ${ogretmenNotuHtml}
+              <div class="mt-3">
+                <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                  <span>Kaldığım: ${kalSayfa}. Sayfa</span>
+                  <span>Toplam: ${topSayfa} Sayfa</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div class="bg-gradient-to-r from-amber-400 to-emerald-500 h-full rounded-full transition-all duration-500" style="width: ${yuzde}%"></div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100">
+              <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
+                      class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1">
+                <span>✏️</span> Sayfamı Güncelle / Bitirdim
+              </button>
+            </div>
+          `;
+          listeDevam.appendChild(card);
+        });
+      } else {
+        alanDevam.classList.add('hidden');
+      }
+
+      havuzFiltrele();
+      okunanlarRender(aktifOgrenci.tamamlananlar);
+    }
+
+    function havuzDurumFiltreSec(filtre) {
+      aktifHavuzFiltre = filtre;
+      const butonlar = {
+        tumu: 'btnFiltreTumu',
+        okunmayan: 'btnFiltreOkunmayan',
+        devam: 'btnFiltreDevam',
+        biten: 'btnFiltreBiten'
+      };
+      Object.keys(butonlar).forEach(k => {
+        const el = document.getElementById(butonlar[k]);
+        if (k === filtre) {
+          el.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500 text-white transition shadow-sm';
+        } else {
+          el.className = 'px-3 py-1.5 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+        }
+      });
+      havuzFiltrele();
+    }
+
+    function havuzFiltrele() {
+      const q = (document.getElementById('inpKitapAra').value || '').toLowerCase().trim();
+      const filtrelenmis = genelHavuz.filter(k => {
+        const metinUygun =
+          String(k.kitapAdi || '').toLowerCase().includes(q) ||
+          String(k.yazar || '').toLowerCase().includes(q) ||
+          String(k.tur || '').toLowerCase().includes(q);
+        if (!metinUygun) return false;
+
+        if (!aktifOgrenci || aktifHavuzFiltre === 'tumu') return true;
+        const devamMi = aktifOgrenci.devamEdenler.some(d => d.kitapId === k.kitapId);
+        const tamamMi = aktifOgrenci.tamamlananlar.some(t => t.kitapId === k.kitapId);
+
+        if (aktifHavuzFiltre === 'okunmayan') return !devamMi && !tamamMi;
+        if (aktifHavuzFiltre === 'devam') return devamMi;
+        if (aktifHavuzFiltre === 'biten') return tamamMi;
+        return true;
+      });
+      havuzRender(filtrelenmis);
+    }
+
+    function havuzRender(havuzListesi) {
+      const grid = document.getElementById('kitapHavuzuGrid');
+      grid.innerHTML = '';
+
+      if (havuzListesi.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-white p-8 rounded-2xl text-center border-2 border-dashed border-amber-200">
+            <span class="text-3xl">🔍</span>
+            <p class="font-bold text-slate-700 mt-2">Bu filtreye uygun kitap bulunamadı.</p>
+          </div>
+        `;
+        return;
+      }
+
+      havuzListesi.forEach(k => {
+        const devamKayit = aktifOgrenci.devamEdenler.find(d => d.kitapId === k.kitapId);
+        const tamamKayit = aktifOgrenci.tamamlananlar.find(t => t.kitapId === k.kitapId);
+        const tema = kitapTurTemasiAl(k.tur);
+        const topSayfa = Math.max(1, Number(k.sayfaSayisi) || 1);
+
+        let durumRozeti = '';
+        let butonHtml = '';
+
+        if (tamamKayit) {
+          if (tamamKayit.durum === 'Onaylandı') {
+            durumRozeti = `<span class="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full">✅ Okudun</span>`;
+            butonHtml = `<div class="w-full py-2 bg-emerald-50 text-emerald-700 font-extrabold rounded-xl text-xs text-center">Tebrikler! Okudun 🎉</div>`;
+          } else {
+            durumRozeti = `<span class="bg-amber-100 text-amber-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full">⏳ Onay Bekliyor</span>`;
+            butonHtml = `
+              <div class="space-y-1.5">
+                <div class="w-full py-1.5 bg-amber-50 text-amber-800 font-bold rounded-xl text-[11px] text-center">Öğretmen Onayında ⏳</div>
+                <button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-[11px] transition">
+                  ↩️ Yanlışlıkla Bitirdim Dedim (Devam Et)
+                </button>
+              </div>
+            `;
+          }
+        } else if (devamKayit) {
+          const yuzde = Math.min(100, Math.round(((Number(devamKayit.kaldigiSayfa) || 0) / topSayfa) * 100));
+          durumRozeti = `<span class="bg-blue-100 text-blue-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full">📖 ${Number(devamKayit.kaldigiSayfa) || 0}. Sayfa (%${yuzde})</span>`;
+          butonHtml = `
+            <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
+                    class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-sm text-xs transition">
+              Sayfamı Güncelle / Bitirdim ✏️
+            </button>
+          `;
+        } else {
+          butonHtml = `
+            <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
+                    class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-1.5 active:scale-95">
+              <span>📖</span> Bu Kitabı Okuyorum / Okudum
+            </button>
+          `;
+        }
+
+        const card = document.createElement('div');
+        card.className = `bg-white rounded-2xl shadow-sm border-2 ${tema.kenar} transition flex flex-col justify-between overflow-hidden`;
+        card.innerHTML = `
+          <div>
+            <div class="h-2 bg-gradient-to-r ${tema.ustRenk}"></div>
+            <div class="p-4 pb-2">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <span class="inline-flex items-center gap-1 text-[11px] font-extrabold ${tema.etiketRenk} px-2.5 py-0.5 rounded-lg">
+                  <span>${tema.ikon}</span> ${escapeHtml(k.tur || 'Genel')}
+                </span>
+                ${durumRozeti}
+              </div>
+              <h4 class="font-black text-slate-800 text-base leading-snug font-hand">${escapeHtml(k.kitapAdi)}</h4>
+              <p class="text-xs text-slate-500 mt-1">${escapeHtml(k.yazar)} • <strong class="text-slate-700">${topSayfa} Sayfa</strong></p>
+            </div>
+          </div>
+          <div class="p-4 pt-3 border-t border-slate-100">
+            ${butonHtml}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function okunanlarRender(tamamlananlar) {
+      const listEl = document.getElementById('ogrKitapListesi');
+      listEl.innerHTML = '';
+
+      if (tamamlananlar.length === 0) {
+        listEl.innerHTML = `
+          <div class="bg-white p-8 rounded-2xl text-center border-2 border-dashed border-amber-200">
+            <span class="text-4xl">📖</span>
+            <p class="font-bold text-slate-700 mt-2">Henüz tamamladığın bir kitap yok.</p>
+            <p class="text-xs text-slate-500 mt-1">Okuduğun kitabın sayfalarını kaydedebilir veya bitirdiğinde bildirebilirsin!</p>
+          </div>
+        `;
+        return;
+      }
+
+      tamamlananlar.forEach(k => {
+        const onayliMi = k.durum === 'Onaylandı';
+        const durumRozet = onayliMi
+          ? `<span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-extrabold">✅ Öğretmen Onayladı</span>`
+          : `<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-extrabold">⏳ Onay Bekliyor</span>`;
+
+        const yildizSayi = Math.min(5, Math.max(1, Number(k.yildiz) || 5));
+        const yildizlar = '★'.repeat(yildizSayi) + '☆'.repeat(5 - yildizSayi);
+
+        const geriAlButon = !onayliMi
+          ? `<button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="text-xs font-bold text-slate-500 hover:text-amber-700 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-xl transition">
+               ↩️ Okumaya Devam Et
+             </button>`
+          : '';
+
+        const card = document.createElement('div');
+        card.className = 'bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+        card.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h4 class="font-black text-slate-800 text-base font-hand">${escapeHtml(k.kitapAdi)}</h4>
+              ${durumRozet}
+            </div>
+            <p class="text-xs text-slate-500">
+              ${k.yazar ? 'Yazar: ' + escapeHtml(k.yazar) + ' • ' : ''}
+              ${Number(k.toplamSayfa) || 0} Sayfa • <span class="text-amber-500 font-bold">${yildizlar}</span>
+            </p>
+            ${k.yorum ? `<p class="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic">“${escapeHtml(k.yorum)}”</p>` : ''}
+          </div>
+          <div class="flex flex-col items-end gap-2 self-end sm:self-center">
+            <span class="text-[11px] text-slate-400 font-medium">${escapeHtml(k.tarih || '')}</span>
+            ${geriAlButon}
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    async function ogrenciKitabiGeriAl(kitapId) {
+      if (!aktifOgrenci) return;
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'ogrenciKitapGeriAl', pin: aktifOgrenci.pin, kitapId: kitapId });
+          if (data) {
+            toastGoster(data.message, data.success ? '📖' : '❌');
+            ogrenciGirisYap(null);
+            return;
+          }
+        } catch (e) {}
+      }
+      const kayit = demoData.okunanlar.find(k => k.ogrenciId === aktifOgrenci.id && k.kitapId === kitapId && k.durum === 'Onay Bekliyor');
+      if (kayit) {
+        kayit.durum = 'Devam Ediyor';
+        kayit.kaldigiSayfa = Math.max(1, (Number(kayit.toplamSayfa) || 10) - 1);
+        demoKaydet();
+        toastGoster('Kitap tekrar "Okumaya Devam Ediyorum" listene alındı! 📖');
+        ogrenciDemoGiris(aktifOgrenci.pin);
+      }
+    }
+
+    function ogrenciCikisYap() {
+      aktifOgrenci = null;
+      sessionStorage.removeItem('kitapKurtlari_aktifOgrPin');
+      document.getElementById('ogrenciPinInput').value = '';
+      ogrenciPinKutulariGuncelle();
+      ekranDegistir('ogrenciGiris');
+      toastGoster('Güvenli çıkış yapıldı. 👋');
+    }
+
+    // ========================================================
+    // 2. SAYFA İLERLEMESİ / BİTİRME MODAL İŞLEMLERİ
+    // ========================================================
+    function kitapModalAcId(kitapId) {
+      if (!aktifOgrenci) return;
+      const havuzKitap = genelHavuz.find(k => k.kitapId === kitapId);
+      const devamKayit = aktifOgrenci.devamEdenler.find(d => d.kitapId === kitapId);
+
+      const ad = havuzKitap ? havuzKitap.kitapAdi : (devamKayit ? devamKayit.kitapAdi : 'Kitap');
+      const yazar = havuzKitap ? havuzKitap.yazar : (devamKayit ? devamKayit.yazar : '');
+      const toplamSayfa = Math.max(1, Number(havuzKitap ? havuzKitap.sayfaSayisi : (devamKayit ? devamKayit.toplamSayfa : 100)) || 100);
+      const kaldigiSayfa = devamKayit ? (Number(devamKayit.kaldigiSayfa) || 1) : 1;
+
+      document.getElementById('modalKitapId').value = kitapId;
+      document.getElementById('modalToplamSayfaHidden').value = toplamSayfa;
+
+      document.getElementById('modalKitapBaslik').innerText = ad;
+      document.getElementById('modalKitapDetay').innerText = `${yazar} • Toplam ${toplamSayfa} Sayfa`;
+      document.getElementById('modalToplamSayfaEtiket').innerText = `/ ${toplamSayfa} Sayfa`;
+
+      // Form State Leak Önleme: Yorumu ve yıldızı her açılışta temizle / mevcut kayıttan yükle
+      document.getElementById('modalYorum').value = (devamKayit && devamKayit.yorum) ? devamKayit.yorum : '';
+      const mevcutYildiz = (devamKayit && devamKayit.yildiz) ? Math.min(5, Math.max(1, Number(devamKayit.yildiz))) : 5;
+      const starEl = document.getElementById('star' + mevcutYildiz);
+      if (starEl) starEl.checked = true;
+      yildizDuyguGuncelle(mevcutYildiz);
+
+      const inpSayfa = document.getElementById('modalKaldigiSayfa');
+      inpSayfa.max = toplamSayfa;
+      inpSayfa.value = kaldigiSayfa > 0 ? kaldigiSayfa : 1;
+
+      durumModuSec('devam');
+      canliIlerlemeHesapla();
+      modalAc('modalKitapBildir');
+    }
+
+    function yildizDuyguGuncelle(puan) {
+      const metinler = {
+        5: '🤩 Bayıldım, harikaydı!',
+        4: '😊 Çok sevdim!',
+        3: '🙂 Güzeldi',
+        2: '😐 Biraz sıkıldım',
+        1: '😕 Pek beğenmedim'
+      };
+      document.getElementById('etiketYildizDuygu').innerText = metinler[puan] || metinler[5];
+    }
+
+    function durumModuSec(mod) {
+      seciliMod = mod;
+      const btnDevam = document.getElementById('btnModDevam');
+      const btnBitirdim = document.getElementById('btnModBitirdim');
+      const alanSayfa = document.getElementById('alanSayfaGiris');
+      const alanBitis = document.getElementById('alanBitisDegerlendirme');
+      const btnGonder = document.getElementById('btnIlerlemeKaydet');
+      const topSayfa = Math.max(1, Number(document.getElementById('modalToplamSayfaHidden').value) || 100);
+
+      if (mod === 'devam') {
+        btnDevam.className = 'py-2.5 rounded-xl font-extrabold text-xs transition bg-white text-slate-800 shadow-sm';
+        btnBitirdim.className = 'py-2.5 rounded-xl font-extrabold text-xs transition text-slate-500 hover:text-slate-800';
+        alanSayfa.classList.remove('hidden');
+        alanBitis.classList.add('hidden');
+        btnGonder.innerText = 'Kaldığım Sayfayı Kaydet 💾';
+        btnGonder.className = 'w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition text-base';
+      } else {
+        btnBitirdim.className = 'py-2.5 rounded-xl font-extrabold text-xs transition bg-white text-emerald-800 shadow-sm';
+        btnDevam.className = 'py-2.5 rounded-xl font-extrabold text-xs transition text-slate-500 hover:text-slate-800';
+        alanSayfa.classList.add('hidden');
+        alanBitis.classList.remove('hidden');
+        document.getElementById('modalKaldigiSayfa').value = topSayfa;
+        btnGonder.innerText = 'Öğretmenimin Onayına Gönder 📬';
+        btnGonder.className = 'w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl shadow-md transition text-base';
+      }
+    }
+
+    function canliIlerlemeHesapla() {
+      const topSayfa = Math.max(1, Number(document.getElementById('modalToplamSayfaHidden').value) || 1);
+      let girilen = Number(document.getElementById('modalKaldigiSayfa').value) || 0;
+
+      if (girilen > topSayfa) girilen = topSayfa;
+      if (girilen < 0) girilen = 0;
+
+      const yuzde = Math.min(100, Math.round((girilen / topSayfa) * 100));
+      document.getElementById('etiketSayfaOran').innerText = `%${yuzde} Tamamlandı`;
+      document.getElementById('canliProgressCubugu').style.width = `${yuzde}%`;
+
+      const notEl = document.getElementById('sonSayfaBilgiNotu');
+      const alanBitis = document.getElementById('alanBitisDegerlendirme');
+      if (girilen >= topSayfa && seciliMod === 'devam') {
+        document.getElementById('etiketSayfaOran').innerText = `%100 Bitti! 🎉`;
+        notEl.classList.remove('hidden');
+        alanBitis.classList.remove('hidden');
+      } else if (seciliMod === 'devam') {
+        notEl.classList.add('hidden');
+        alanBitis.classList.add('hidden');
+      }
+    }
+
+    async function kitapIlerlemesiniGonder(e) {
+      e.preventDefault();
+      if (!aktifOgrenci) return;
+
+      const kitapId = document.getElementById('modalKitapId').value;
+      const toplamSayfa = Math.max(1, Number(document.getElementById('modalToplamSayfaHidden').value) || 1);
+      let kaldigiSayfa = Math.max(1, Number(document.getElementById('modalKaldigiSayfa').value) || 1);
+      if (kaldigiSayfa > toplamSayfa) kaldigiSayfa = toplamSayfa;
+
+      // Öğrenci son sayfayı yazdıysa otomatik olarak bitirildi kabul et!
+      const bitirildiMi = (seciliMod === 'bitirdim') || (kaldigiSayfa >= toplamSayfa);
+      if (bitirildiMi) kaldigiSayfa = toplamSayfa;
+
+      const seciliRadio = document.querySelector('input[name="rating"]:checked');
+      const yildiz = Math.min(5, Math.max(1, Number(seciliRadio ? seciliRadio.value : 5)));
+      const yorum = document.getElementById('modalYorum').value.trim();
+
+      const btn = document.getElementById('btnIlerlemeKaydet');
+      btn.disabled = true;
+      btn.innerText = 'Kaydediliyor... ⏳';
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: 'kitapIlerlemeKaydet',
+            pin: aktifOgrenci.pin,
+            kitapId: kitapId,
+            toplamSayfa: toplamSayfa,
+            kaldigiSayfa: kaldigiSayfa,
+            bitirildiMi: bitirildiMi,
+            yildiz: yildiz,
+            yorum: yorum
+          });
+          btn.disabled = false;
+          if (data) {
+            toastGoster(data.message, data.success ? '✅' : '❌');
+            if (data.success && bitirildiMi) konfetiPatlat();
+            modalKapat('modalKitapBildir');
+            ogrenciGirisYap(null);
+            return;
+          }
+        } catch (err) {
+          toastGoster('Çevrimdışı olarak kaydediliyor.', '⚠️');
+        }
+      }
+
+      btn.disabled = false;
+      const havuzKitabi = genelHavuz.find(k => k.kitapId === kitapId);
+      const kitapAdi = havuzKitabi ? havuzKitabi.kitapAdi : document.getElementById('modalKitapBaslik').innerText;
+      const yazar = havuzKitabi ? havuzKitabi.yazar : '';
+      demoIlerlemeKaydet(kitapId, kitapAdi, yazar, toplamSayfa, kaldigiSayfa, bitirildiMi, yildiz, yorum);
+    }
+
+    function demoIlerlemeKaydet(kitapId, kitapAdi, yazar, toplamSayfa, kaldigiSayfa, bitirildiMi, yildiz, yorum) {
+      let kayit = demoData.okunanlar.find(k => k.ogrenciId === aktifOgrenci.id && k.kitapId === kitapId && k.durum !== 'Onaylandı');
+      const yeniDurum = bitirildiMi ? 'Onay Bekliyor' : 'Devam Ediyor';
+      const tarihStr = new Date().toLocaleDateString('tr-TR') + ' ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+      if (kayit) {
+        kayit.kaldigiSayfa = kaldigiSayfa;
+        kayit.durum = yeniDurum;
+        kayit.yildiz = yildiz;
+        if (yorum) kayit.yorum = yorum;
+        kayit.tarih = tarihStr;
+        if (bitirildiMi) kayit.ogretmenNotu = '';
+      } else {
+        demoData.okunanlar.unshift({
+          islemId: 'ISLEM-' + Date.now(),
+          ogrenciId: aktifOgrenci.id,
+          kitapId: kitapId,
+          kitapAdi: kitapAdi,
+          yazar: yazar,
+          toplamSayfa: toplamSayfa,
+          kaldigiSayfa: kaldigiSayfa,
+          yildiz: yildiz,
+          yorum: yorum,
+          tarih: tarihStr,
+          durum: yeniDurum,
+          ogretmenNotu: ''
+        });
+      }
+
+      demoKaydet();
+      if (bitirildiMi) konfetiPatlat();
+      const msg = bitirildiMi
+        ? `Tebrikler! "${kitapAdi}" bitti ve öğretmenin onayına gönderildi! 🎉`
+        : `"${kitapAdi}" ${kaldigiSayfa}. sayfaya kadar kaydedildi! 📖`;
+
+      toastGoster(msg, '✅');
+      modalKapat('modalKitapBildir');
+      ogrenciDemoGiris(aktifOgrenci.pin);
+    }
+
+    // ========================================================
+    // 3. ÖĞRETMEN YÖNETİM İŞLEMLERİ (5 SEKME & TAM CRUD)
+    // ========================================================
+    async function ogretmenGirisYap(e) {
+      if (e) e.preventDefault();
+      const pin = document.getElementById('ogretmenSifreInput').value.trim();
+      if (!pin) {
+        toastGoster('Lütfen öğretmen PIN kodunuzu giriniz.', '⚠️');
+        return;
+      }
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'ogretmenGiris', pin: pin });
+          if (data && data.success) {
+            ogretmenSifre = pin;
+            sessionStorage.setItem('kitapKurtlari_aktifOgrtPin', pin);
+            aktifOgretmen = data.ogretmen;
+            document.getElementById('ekranOgretmenGiris').classList.add('hidden');
+            document.getElementById('ekranOgretmenPanel').classList.remove('hidden');
+            ogretmenPaneliDoldur(data);
+            return;
+          } else if (data) {
+            sessionStorage.removeItem('kitapKurtlari_aktifOgrtPin');
+            toastGoster(data.message, '❌');
+            return;
+          }
+        } catch (err) {
+          toastGoster('Çevrimdışı öğretmen moduna geçiliyor.', '⚠️');
+        }
+      }
+
+      const ogrt = demoData.ogretmenler.find(o => o.pin === pin);
+      if (ogrt) {
+        ogretmenSifre = pin;
+        sessionStorage.setItem('kitapKurtlari_aktifOgrtPin', pin);
+        aktifOgretmen = ogrt;
+        document.getElementById('ekranOgretmenGiris').classList.add('hidden');
+        document.getElementById('ekranOgretmenPanel').classList.remove('hidden');
+        ogretmenVerileriniYukle();
+      } else {
+        sessionStorage.removeItem('kitapKurtlari_aktifOgrtPin');
+        toastGoster('Hatalı Öğretmen PIN kodu!', '❌');
+      }
+    }
+
+    function ogretmenCikisYap() {
+      ogretmenSifre = '';
+      aktifOgretmen = null;
+      sessionStorage.removeItem('kitapKurtlari_aktifOgrtPin');
+      document.getElementById('ogretmenSifreInput').value = '';
+      ekranDegistir('ogretmenGiris');
+      toastGoster('Öğretmen panelinden çıkış yapıldı.');
+    }
+
+    function ogretmenTabDegistir(tab) {
+      const sekmeler = {
+        bekleyenler: { div: 'tabOgretmenBekleyenler', btn: 'tabBtnBekleyenler' },
+        devamEdenler: { div: 'tabOgretmenDevamEdenler', btn: 'tabBtnDevamEdenler' },
+        onaylananlar: { div: 'tabOgretmenOnaylananlar', btn: 'tabBtnOnaylananlar' },
+        havuz: { div: 'tabOgretmenHavuz', btn: 'tabBtnOgretmenHavuz' },
+        ogrenciler: { div: 'tabOgretmenOgrenciler', btn: 'tabBtnOgrenciler' }
+      };
+
+      Object.keys(sekmeler).forEach(k => {
+        document.getElementById(sekmeler[k].div).classList.add('hidden');
+        document.getElementById(sekmeler[k].btn).className = 'px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2';
+      });
+
+      const aktif = sekmeler[tab] || sekmeler.bekleyenler;
+      document.getElementById(aktif.div).classList.remove('hidden');
+      document.getElementById(aktif.btn).className = 'px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2';
+    }
+
+    async function ogretmenVerileriniYukle() {
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'ogretmenGiris', pin: ogretmenSifre });
+          if (data && data.success) {
+            if (data.ogretmen) aktifOgretmen = data.ogretmen;
+            ogretmenPaneliDoldur(data);
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      const ogrtSinif = aktifOgretmen ? aktifOgretmen.sinif : demoData.ayarlar.SinifAdi;
+      const sinifOgrencileri = demoData.ogrenciler.filter(o =>
+        !o.sinif || o.sinif === ogrtSinif || (aktifOgretmen && o.ogretmenId === aktifOgretmen.id)
+      );
+      const sinifOgrIdMap = {};
+      sinifOgrencileri.forEach(o => { sinifOgrIdMap[o.id] = o; });
+
+      const bekleyenler = [];
+      const devamEdenler = [];
+      const onaylananlar = [];
+
+      demoData.okunanlar.forEach(k => {
+        const ogr = sinifOgrIdMap[k.ogrenciId];
+        if (!ogr) return;
+        const item = { ...k, ogrenciAdi: ogr.adSoyad };
+        if (k.durum === 'Onay Bekliyor') bekleyenler.push(item);
+        else if (k.durum === 'Devam Ediyor') devamEdenler.push(item);
+        else if (k.durum === 'Onaylandı') onaylananlar.push(item);
+      });
+
+      const ogrenciler = sinifOgrencileri.map(ogr => {
+        const kList = demoData.okunanlar.filter(k => k.ogrenciId === ogr.id);
+        let toplamSayfa = 0;
+        kList.forEach(k => {
+          if (k.durum === 'Onaylandı' || k.durum === 'Onay Bekliyor') toplamSayfa += (Number(k.toplamSayfa) || 0);
+          else if (k.durum === 'Devam Ediyor') toplamSayfa += (Number(k.kaldigiSayfa) || 0);
+        });
+        return {
+          ...ogr,
+          sinif: ogr.sinif || ogrtSinif,
+          okunanKitap: kList.filter(k => k.durum === 'Onaylandı').length,
+          toplamSayfa: toplamSayfa
+        };
+      });
+
+      const sinifHavuzu = demoData.havuz.filter(k => !k.sinif || k.sinif === 'Ortak' || k.sinif === ogrtSinif);
+
+      ogretmenPaneliDoldur({
+        ogretmen: aktifOgretmen,
+        bekleyenler,
+        devamEdenler,
+        onaylananlar,
+        ogrenciler,
+        havuz: sinifHavuzu,
+        ayarlar: { ...demoData.ayarlar, SinifAdi: ogrtSinif }
+      });
+    }
+
+    function ogretmenPaneliDoldur(data) {
+      if (data.ogretmen) {
+        document.getElementById('ogretmenPanelSinifRozet').innerText = data.ogretmen.sinif || 'Sınıf Paneli';
+        document.getElementById('ogretmenPanelIsimRozet').innerText = `👩‍🏫 ${data.ogretmen.adSoyad} (PIN: ${data.ogretmen.pin})`;
+        document.getElementById('headerSinifAdi').innerText = 'Kitap Kurtları';
+      }
+
+      ogretmenHavuzCache = data.havuz || [];
+      ogretmenOgrenciCache = data.ogrenciler || [];
+
+      // 1. Bekleyenler
+      const bekleyenList = document.getElementById('bekleyenKitaplarListesi');
+      const bekleyenler = data.bekleyenler || [];
+      document.getElementById('badgeBekleyenSayi').innerText = bekleyenler.length;
+      bekleyenList.innerHTML = '';
+
+      if (bekleyenler.length === 0) {
+        bekleyenList.innerHTML = `
+          <div class="bg-white p-8 rounded-2xl text-center border-2 border-dashed border-slate-200">
+            <span class="text-3xl">☕</span>
+            <p class="font-bold text-slate-700 mt-2">Onay bekleyen biten kitap yok!</p>
+            <p class="text-xs text-slate-400 mt-1">Öğrencileriniz kitap bitirdiğinde burada görünecektir.</p>
+          </div>
+        `;
+      } else {
+        bekleyenler.forEach(k => {
+          const ySayi = Math.min(5, Math.max(1, Number(k.yildiz) || 5));
+          const yildizlar = '★'.repeat(ySayi) + '☆'.repeat(5 - ySayi);
+          const el = document.createElement('div');
+          el.className = 'bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4';
+          el.innerHTML = `
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-black text-slate-900 text-base">${escapeHtml(k.ogrenciAdi)}</span>
+                <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Onay Bekliyor</span>
+              </div>
+              <p class="text-sm font-bold text-indigo-700">📖 ${escapeHtml(k.kitapAdi)} <span class="text-slate-500 font-normal">(${escapeHtml(k.yazar)})</span></p>
+              <p class="text-xs text-slate-500">
+                ${Number(k.toplamSayfa) || 0} Sayfa • <span class="text-amber-500 font-bold">${yildizlar}</span> • ${escapeHtml(k.tarih || '')}
+              </p>
+              ${k.yorum ? `<p class="text-xs text-slate-700 bg-amber-50/70 px-3 py-1.5 rounded-xl border border-amber-200 italic">💬 Öğrenci Yorumu: “${escapeHtml(k.yorum)}”</p>` : '<p class="text-[11px] text-slate-400 italic">Öğrenci yorum yazmamış.</p>'}
+            </div>
+            <div class="flex flex-wrap items-center gap-2 self-end md:self-center">
+              <button onclick="kitapOnayla('${escapeHtml(k.islemId)}')" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center gap-1">
+                <span>✅</span> Onayla
+              </button>
+              <button onclick="kitapIadeModalAc('${escapeHtml(k.islemId)}')" class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold rounded-xl text-xs transition flex items-center gap-1">
+                <span>🔄</span> Not Yazıp İade Et
+              </button>
+              <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-xs transition">
+                🗑️ Sil
+              </button>
+            </div>
+          `;
+          bekleyenList.appendChild(el);
+        });
+      }
+
+      // 2. Devam Edenler
+      const devamList = document.getElementById('ogretmenDevamEdenlerListesi');
+      const devamEdenler = data.devamEdenler || [];
+      document.getElementById('badgeDevamEdenSayi').innerText = devamEdenler.length;
+      devamList.innerHTML = '';
+
+      if (devamEdenler.length === 0) {
+        devamList.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 bg-white rounded-2xl">Şu an okuma aşamasında olan öğrenci yok.</div>`;
+      } else {
+        devamEdenler.forEach(k => {
+          const topS = Math.max(1, Number(k.toplamSayfa) || 1);
+          const kalS = Math.min(topS, Math.max(0, Number(k.kaldigiSayfa) || 0));
+          const yuzde = Math.min(100, Math.round((kalS / topS) * 100));
+          const el = document.createElement('div');
+          el.className = 'bg-white p-4 rounded-2xl border border-blue-200 shadow-sm';
+          el.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-black text-slate-800 text-sm">${escapeHtml(k.ogrenciAdi)}</span>
+                <p class="text-xs font-bold text-indigo-700">${escapeHtml(k.kitapAdi)}</p>
+              </div>
+              <span class="text-xs font-black text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">%${yuzde}</span>
+            </div>
+            <div class="mt-2.5">
+              <div class="flex justify-between text-[11px] text-slate-500 font-bold mb-1">
+                <span>${kalS}. Sayfada</span>
+                <span>Toplam: ${topS} Sayfa</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-blue-500 h-full rounded-full" style="width: ${yuzde}%"></div>
+              </div>
+              ${k.ogretmenNotu ? `<p class="text-[11px] text-amber-800 mt-1.5 bg-amber-50 px-2 py-1 rounded">📌 İade Notunuz: ${escapeHtml(k.ogretmenNotu)}</p>` : ''}
+            </div>
+          `;
+          devamList.appendChild(el);
+        });
+      }
+
+      // 3. Onaylanan Kitaplar Geçmişi
+      const onayList = document.getElementById('ogretmenOnaylananlarListesi');
+      const onaylananlar = data.onaylananlar || [];
+      document.getElementById('badgeOnaylananSayi').innerText = onaylananlar.length;
+      onayList.innerHTML = '';
+
+      if (onaylananlar.length === 0) {
+        onayList.innerHTML = `<div class="p-8 text-center text-slate-400 bg-white rounded-2xl">Henüz onaylanmış kitap bulunmuyor.</div>`;
+      } else {
+        onaylananlar.forEach(k => {
+          const ySayi = Math.min(5, Math.max(1, Number(k.yildiz) || 5));
+          const yildizlar = '★'.repeat(ySayi) + '☆'.repeat(5 - ySayi);
+          const el = document.createElement('div');
+          el.className = 'bg-white p-4 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+          el.innerHTML = `
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-slate-800 text-sm">${escapeHtml(k.ogrenciAdi)}</span>
+                <span class="text-[11px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full">✅ Onaylandı</span>
+              </div>
+              <p class="text-xs font-bold text-indigo-700 mt-0.5">📖 ${escapeHtml(k.kitapAdi)} (${Number(k.toplamSayfa) || 0} Sayfa • <span class="text-amber-500">${yildizlar}</span>)</p>
+              ${k.yorum ? `<p class="text-xs text-slate-600 italic mt-1">“${escapeHtml(k.yorum)}”</p>` : ''}
+            </div>
+            <div class="flex items-center gap-2 self-end sm:self-center">
+              <button onclick="kitapOnayGeriAl('${escapeHtml(k.islemId)}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                ↩️ Onayı Geri Al
+              </button>
+            </div>
+          `;
+          onayList.appendChild(el);
+        });
+      }
+
+      // 4. Havuz Listesi (Aktiflik Tarihi & Düzenle Butonu)
+      const havuzContainer = document.getElementById('ogretmenHavuzListesi');
+      havuzContainer.innerHTML = '';
+      const bugun = bugunTarihFormatli();
+
+      ogretmenHavuzCache.forEach(k => {
+        const kitapTarih = k.aktifTarih ? String(k.aktifTarih).slice(0, 10) : '';
+        const ileriTarihliMi = kitapTarih && kitapTarih > bugun;
+
+        const tarihRozeti = ileriTarihliMi
+          ? `<span class="inline-flex items-center gap-1 text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full border border-amber-300">⏳ ${escapeHtml(tarihGorunurFormat(kitapTarih))} tarihinde açılacak</span>`
+          : `<span class="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full">✅ Öğrencilere Aktif</span>`;
+
+        const item = document.createElement('div');
+        item.className = `bg-white p-4 rounded-2xl border ${ileriTarihliMi ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'} flex flex-col justify-between shadow-sm gap-3`;
+        item.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded">${escapeHtml(k.tur || 'Genel')}</span>
+              ${tarihRozeti}
+            </div>
+            <h5 class="font-black text-slate-800 text-sm">${escapeHtml(k.kitapAdi)}</h5>
+            <p class="text-xs text-slate-500">${escapeHtml(k.yazar)} • ${Number(k.sayfaSayisi) || 0} Sayfa</p>
+          </div>
+          <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
+            <button onclick="kitapDuzenleModalAc('${escapeHtml(k.kitapId)}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
+              ✏️ Düzenle / Tarih
+            </button>
+            <button onclick="havuzdanKitapSil('${escapeHtml(k.kitapId)}')" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
+              🗑️ Sil
+            </button>
+          </div>
+        `;
+        havuzContainer.appendChild(item);
+      });
+
+      // 5. Öğrenci Listesi (Düzenle & Sil Butonları Eklendi!)
+      const tbody = document.getElementById('ogretmenOgrenciTabloBody');
+      tbody.innerHTML = '';
+      ogretmenOgrenciCache.forEach(ogr => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition';
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-bold">${escapeHtml(ogr.numara || '-')}</td>
+          <td class="py-3 px-4 font-black text-slate-800">${escapeHtml(ogr.avatar || '🦊')} ${escapeHtml(ogr.adSoyad)}</td>
+          <td class="py-3 px-4">
+            <span class="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full text-xs">
+              ${escapeHtml(ogr.sinif || (aktifOgretmen ? aktifOgretmen.sinif : '-'))}
+            </span>
+          </td>
+          <td class="py-3 px-4">
+            <span class="bg-amber-100 text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs">
+              ${escapeHtml(ogr.pin)}
+            </span>
+          </td>
+          <td class="py-3 px-4 font-extrabold text-emerald-700">${Number(ogr.okunanKitap) || 0} Kitap</td>
+          <td class="py-3 px-4 text-slate-500 font-medium">${Number(ogr.toplamSayfa) || 0} Sayfa</td>
+          <td class="py-3 px-4 text-right space-x-1">
+            <button onclick="ogrenciDuzenleModalAc('${escapeHtml(ogr.id)}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1 hover:bg-indigo-50 rounded-xl transition">
+              ✏️ Düzenle
+            </button>
+            <button onclick="ogrenciSil('${escapeHtml(ogr.id)}')" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1 hover:bg-red-50 rounded-xl transition">
+              🗑️ Sil
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function kitapOnayla(islemId) {
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'kitapOnayla', pin: ogretmenSifre, islemId: islemId });
+          if (data) {
+            toastGoster(data.message, data.success ? '✅' : '❌');
+            ogretmenVerileriniYukle();
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+      const item = demoData.okunanlar.find(k => k.islemId === islemId);
+      if (item) {
+        item.durum = 'Onaylandı';
+        item.ogretmenNotu = '';
+        demoKaydet();
+        toastGoster('Kitap onaylandı! ⭐', '✅');
+        ogretmenVerileriniYukle();
+      }
+    }
+
+    function kitapIadeModalAc(islemId) {
+      document.getElementById('inpIadeIslemId').value = islemId;
+      document.getElementById('inpOgretmenIadeNotu').value = '';
+      modalAc('modalKitapIade');
+    }
+
+    function hizliIadeNotuSec(metin) {
+      document.getElementById('inpOgretmenIadeNotu').value = metin;
+    }
+
+    async function kitapIadeGonder(e) {
+      e.preventDefault();
+      const islemId = document.getElementById('inpIadeIslemId').value;
+      const not = document.getElementById('inpOgretmenIadeNotu').value.trim();
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'kitapIadeEt', pin: ogretmenSifre, islemId: islemId, ogretmenNotu: not });
+          if (data) {
+            toastGoster(data.message, data.success ? '🔄' : '❌');
+            modalKapat('modalKitapIade');
+            ogretmenVerileriniYukle();
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+      const item = demoData.okunanlar.find(k => k.islemId === islemId);
+      if (item) {
+        item.durum = 'Devam Ediyor';
+        item.ogretmenNotu = not;
+        demoKaydet();
+        modalKapat('modalKitapIade');
+        toastGoster('Kitap notunuzla birlikte öğrenciye iade edildi. 🔄');
+        ogretmenVerileriniYukle();
+      }
+    }
+
+    async function kitapOnayGeriAl(islemId) {
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'kitapOnayGeriAl', pin: ogretmenSifre, islemId: islemId });
+          if (data) {
+            toastGoster(data.message);
+            ogretmenVerileriniYukle();
+            return;
+          }
+        } catch (err) {}
+      }
+      const item = demoData.okunanlar.find(k => k.islemId === islemId);
+      if (item) {
+        item.durum = 'Onay Bekliyor';
+        demoKaydet();
+        toastGoster('Onay geri alındı.');
+        ogretmenVerileriniYukle();
+      }
+    }
+
+    async function kitapSil(islemId) {
+      if (!confirm('Bu okuma kaydını tamamen silmek istediğinize emin misiniz? (Silmek yerine "Not Yazıp İade Et" seçeneğini de kullanabilirsiniz.)')) return;
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'kitapSil', pin: ogretmenSifre, islemId: islemId });
+          if (data) {
+            toastGoster(data.message);
+            ogretmenVerileriniYukle();
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+      demoData.okunanlar = demoData.okunanlar.filter(k => k.islemId !== islemId);
+      demoKaydet();
+      toastGoster('Kayıt silindi.');
+      ogretmenVerileriniYukle();
+    }
+
+    function kitapEkleModalAc() {
+      document.getElementById('formHavuzKitapEkle').reset();
+      document.getElementById('inpHavuzDuzenlenenKitapId').value = '';
+      document.getElementById('inpHavuzAktifTarih').value = bugunTarihFormatli();
+      document.getElementById('baslikModalKitapForm').innerText = '📚 Sınıf Kütüphanesine Kitap Ekle';
+      document.getElementById('btnHavuzKitapSubmit').innerText = 'Kütüphaneye Kaydet ✨';
+      modalAc('modalHavuzKitapEkle');
+    }
+
+    function kitapDuzenleModalAc(kitapId) {
+      const k = ogretmenHavuzCache.find(x => x.kitapId === kitapId);
+      if (!k) return;
+      document.getElementById('inpHavuzDuzenlenenKitapId').value = k.kitapId;
+      document.getElementById('inpHavuzAd').value = k.kitapAdi;
+      document.getElementById('inpHavuzYazar').value = k.yazar;
+      document.getElementById('inpHavuzSayfa').value = k.sayfaSayisi;
+      document.getElementById('inpHavuzTur').value = k.tur || 'Genel';
+      document.getElementById('inpHavuzAktifTarih').value = k.aktifTarih ? String(k.aktifTarih).slice(0, 10) : bugunTarihFormatli();
+      document.getElementById('baslikModalKitapForm').innerText = '✏️ Kitap Bilgilerini & Tarihini Düzenle';
+      document.getElementById('btnHavuzKitapSubmit').innerText = 'Değişiklikleri Kaydet 💾';
+      modalAc('modalHavuzKitapEkle');
+    }
+
+    async function havuzaKitapKaydet(e) {
+      e.preventDefault();
+      const duzenlenenKitapId = document.getElementById('inpHavuzDuzenlenenKitapId').value.trim();
+      const ad = document.getElementById('inpHavuzAd').value.trim();
+      const yazar = document.getElementById('inpHavuzYazar').value.trim();
+      const sayfa = Math.max(1, Number(document.getElementById('inpHavuzSayfa').value) || 1);
+      const tur = document.getElementById('inpHavuzTur').value.trim() || 'Genel';
+      const aktifTarih = document.getElementById('inpHavuzAktifTarih').value || bugunTarihFormatli();
+
+      const action = duzenlenenKitapId ? 'havuzKitapGuncelle' : 'havuzaKitapEkle';
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: action,
+            pin: ogretmenSifre,
+            kitapId: duzenlenenKitapId,
+            kitapAdi: ad,
+            yazar: yazar,
+            sayfaSayisi: sayfa,
+            tur: tur,
+            aktifTarih: aktifTarih
+          });
+          if (data) {
+            toastGoster(data.message, data.success ? '✅' : '❌');
+            if (data.success) {
+              document.getElementById('formHavuzKitapEkle').reset();
+              modalKapat('modalHavuzKitapEkle');
+              ogretmenVerileriniYukle();
+            }
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+
+      if (duzenlenenKitapId) {
+        const k = demoData.havuz.find(x => x.kitapId === duzenlenenKitapId);
+        if (k) {
+          k.kitapAdi = ad;
+          k.yazar = yazar;
+          k.sayfaSayisi = sayfa;
+          k.tur = tur;
+          k.aktifTarih = aktifTarih;
+        }
+      } else {
+        demoData.havuz.push({
+          kitapId: 'HAVUZ-' + Date.now().toString().slice(-5),
+          kitapAdi: ad,
+          yazar: yazar,
+          sayfaSayisi: sayfa,
+          tur: tur,
+          sinif: aktifOgretmen ? aktifOgretmen.sinif : 'Ortak',
+          aktifTarih: aktifTarih
+        });
+      }
+      demoKaydet();
+      modalKapat('modalHavuzKitapEkle');
+      ogretmenVerileriniYukle();
+      toastGoster(`"${ad}" kaydedildi!`, '✅');
+    }
+
+    async function havuzdanKitapSil(kitapId) {
+      if (!confirm('Bu kitabı kütüphaneden kaldırmak istediğinize emin misiniz?')) return;
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'havuzdanKitapSil', pin: ogretmenSifre, kitapId: kitapId });
+          if (data) {
+            toastGoster(data.message);
+            ogretmenVerileriniYukle();
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+      demoData.havuz = demoData.havuz.filter(k => k.kitapId !== kitapId);
+      demoKaydet();
+      toastGoster('Kitap kütüphaneden kaldırıldı.');
+      ogretmenVerileriniYukle();
+    }
+
+    function ogrenciEkleModalAc() {
+      document.getElementById('formOgrenciKaydet').reset();
+      document.getElementById('inpDuzenlenenOgrId').value = '';
+      document.getElementById('baslikModalOgrenciForm').innerText = '👧 Yeni Öğrenci Ekle';
+      document.getElementById('btnOgrenciFormSubmit').innerText = 'Öğrenciyi Kaydet';
+      modalAc('modalOgrenciEkle');
+    }
+
+    function ogrenciDuzenleModalAc(ogrenciId) {
+      const ogr = ogretmenOgrenciCache.find(o => o.id === ogrenciId);
+      if (!ogr) return;
+      document.getElementById('inpDuzenlenenOgrId').value = ogr.id;
+      document.getElementById('inpYeniOgrAd').value = ogr.adSoyad;
+      document.getElementById('inpYeniOgrNo').value = ogr.numara || '';
+      document.getElementById('inpYeniOgrPin').value = ogr.pin || '';
+      document.getElementById('baslikModalOgrenciForm').innerText = '✏️ Öğrenci Bilgilerini Düzenle';
+      document.getElementById('btnOgrenciFormSubmit').innerText = 'Değişiklikleri Kaydet 💾';
+      modalAc('modalOgrenciEkle');
+    }
+
+    async function ogrenciKaydet(e) {
+      e.preventDefault();
+      const duzenlenenOgrId = document.getElementById('inpDuzenlenenOgrId').value.trim();
+      const ad = document.getElementById('inpYeniOgrAd').value.trim();
+      const no = document.getElementById('inpYeniOgrNo').value.trim();
+      const ogrPin = document.getElementById('inpYeniOgrPin').value.trim();
+
+      const action = duzenlenenOgrId ? 'ogrenciGuncelle' : 'ogrenciEkle';
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: action,
+            pin: ogretmenSifre,
+            ogrenciId: duzenlenenOgrId,
+            adSoyad: ad,
+            numara: no,
+            ogrenciPin: ogrPin
+          });
+          if (data) {
+            toastGoster(data.message, data.success ? '✅' : '❌');
+            if (data.success) {
+              document.getElementById('formOgrenciKaydet').reset();
+              modalKapat('modalOgrenciEkle');
+              ogretmenVerileriniYukle();
+            }
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+
+      // Çevrimdışı benzersiz PIN kontrolü
+      const mevcutPinler = new Set(demoData.ogrenciler.filter(o => o.id !== duzenlenenOgrId).map(o => o.pin));
+      let sonPin = ogrPin;
+      if (sonPin && mevcutPinler.has(sonPin)) {
+        toastGoster(`Bu PIN kodu (${sonPin}) başka bir öğrencide kullanılıyor!`, '❌');
+        return;
+      }
+      if (!sonPin) {
+        for (let i = 0; i < 500; i++) {
+          const aday = Math.floor(100000 + Math.random() * 900000).toString();
+          if (!mevcutPinler.has(aday)) { sonPin = aday; break; }
+        }
+      }
+
+      if (duzenlenenOgrId) {
+        const ogr = demoData.ogrenciler.find(o => o.id === duzenlenenOgrId);
+        if (ogr) {
+          ogr.adSoyad = ad;
+          ogr.numara = no;
+          ogr.pin = sonPin;
+        }
+      } else {
+        demoData.ogrenciler.push({
+          id: 'OGR-' + Date.now().toString().slice(-5),
+          adSoyad: ad,
+          numara: no,
+          pin: sonPin,
+          sinif: aktifOgretmen ? aktifOgretmen.sinif : demoData.ayarlar.SinifAdi,
+          ogretmenId: aktifOgretmen ? aktifOgretmen.id : '',
+          avatar: '🦊'
+        });
+      }
+      demoKaydet();
+      document.getElementById('formOgrenciKaydet').reset();
+      modalKapat('modalOgrenciEkle');
+      ogretmenVerileriniYukle();
+      toastGoster(`${ad} kaydedildi! PIN: ${sonPin}`, '✅');
+    }
+
+    async function topluOgrenciKaydet(e) {
+      e.preventDefault();
+      const hamMetin = document.getElementById('inpTopluOgrenciMetin').value.trim();
+      if (!hamMetin) return;
+
+      const satirlar = hamMetin.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const eklenecekler = satirlar.map(satir => {
+        const eslesme = satir.match(/^(\d+)\s*[-–—:.,\t ]\s*(.+)$/);
+        if (eslesme) {
+          return { numara: eslesme[1].trim(), adSoyad: eslesme[2].trim() };
+        }
+        return { numara: '', adSoyad: satir };
+      });
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({
+            action: 'ogrenciTopluEkle',
+            pin: ogretmenSifre,
+            ogrenciler: eklenecekler
+          });
+          if (data) {
+            toastGoster(data.message, data.success ? '🎉' : '❌');
+            if (data.success) {
+              document.getElementById('inpTopluOgrenciMetin').value = '';
+              modalKapat('modalTopluOgrenciEkle');
+              ogretmenVerileriniYukle();
+            }
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+
+      const mevcutPinler = new Set(demoData.ogrenciler.map(o => o.pin));
+      eklenecekler.forEach((item, idx) => {
+        let pin = '';
+        for (let i = 0; i < 500; i++) {
+          const aday = Math.floor(100000 + Math.random() * 900000).toString();
+          if (!mevcutPinler.has(aday)) { pin = aday; mevcutPinler.add(aday); break; }
+        }
+        demoData.ogrenciler.push({
+          id: 'OGR-' + Date.now().toString().slice(-4) + '-' + idx,
+          adSoyad: item.adSoyad,
+          numara: item.numara,
+          pin: pin,
+          sinif: aktifOgretmen ? aktifOgretmen.sinif : demoData.ayarlar.SinifAdi,
+          ogretmenId: aktifOgretmen ? aktifOgretmen.id : '',
+          avatar: '🦊'
+        });
+      });
+      demoKaydet();
+      document.getElementById('inpTopluOgrenciMetin').value = '';
+      modalKapat('modalTopluOgrenciEkle');
+      ogretmenVerileriniYukle();
+      toastGoster(`${eklenecekler.length} öğrenci sınıfınıza eklendi! 🎉`);
+    }
+
+    async function ogrenciSil(ogrenciId) {
+      if (!confirm('Bu öğrenciyi sınıf listesinden kaldırmak istediğinize emin misiniz?')) return;
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'ogrenciSil', pin: ogretmenSifre, ogrenciId: ogrenciId });
+          if (data) {
+            toastGoster(data.message);
+            ogretmenVerileriniYukle();
+            return;
+          }
+        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+      }
+      demoData.ogrenciler = demoData.ogrenciler.filter(o => o.id !== ogrenciId);
+      demoKaydet();
+      toastGoster('Öğrenci silindi.');
+      ogretmenVerileriniYukle();
+    }
+
+    function sinifPinListesiniKopyala() {
+      if (!ogretmenOgrenciCache || ogretmenOgrenciCache.length === 0) {
+        toastGoster('Listede henüz öğrenci yok.', '⚠️');
+        return;
+      }
+      const sinifAdi = aktifOgretmen ? aktifOgretmen.sinif : 'Sınıf';
+      const satirlar = [`📚 ${sinifAdi} KİTAP KURTLARI GİRİŞ PIN LİSTESİ`, '----------------------------------------'];
+      ogretmenOgrenciCache.forEach(o => {
+        satirlar.push(`• ${o.numara ? o.numara + ' - ' : ''}${o.adSoyad}  👉  PIN: ${o.pin}`);
+      });
+      const metin = satirlar.join('\n');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(metin).then(() => {
+          toastGoster('Sınıf PIN listesi panoya kopyalandı! WhatsApp veya belgede paylaşabilirsiniz. 📋', '✅');
+        }).catch(() => alert(metin));
+      } else {
+        alert(metin);
+      }
+    }
+
+    function apiAyariniKaydet() {
+      apiUrl = document.getElementById('inpApiUrl').value.trim();
+      localStorage.setItem('kitapKurtlari_apiUrl', apiUrl);
+      toastGoster('API adresi kaydedildi!', '💾');
+    }
+  </script>
+</body>
+</html>

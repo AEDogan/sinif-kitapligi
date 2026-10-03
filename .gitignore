@@ -1,0 +1,4 @@
+veritabani.json
+*.tmp
+node_modules/
+.DS_Store
