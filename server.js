@@ -311,6 +311,22 @@ function apiIslemCalistir(params, ip) {
     return { success: true, message: 'Kitap tekrar "Şu An Okuduğum Kitaplar" listene alındı! 📖' };
   }
 
+  // 4B. ÖĞRENCİ / VELİ YANLIŞ KİTABI SEÇTİYSE VEYA OKUMAYI BIRAKMAK İSTERSE SİL / GERİ AL
+  if (action === 'ogrenciKitapBirak') {
+    const pin = String(params.pin || '').trim();
+    const kitapId = String(params.kitapId || '').trim();
+    const ogr = db.ogrenciler.find(o => String(o.pin).trim() === pin);
+    if (!ogr) return { success: false, message: 'Öğrenci doğrulanamadı.' };
+
+    const index = db.okunanlar.findIndex(k => k.ogrenciId === ogr.id && k.kitapId === kitapId && k.durum !== 'Onaylandı');
+    if (index === -1) return { success: false, message: 'İptal edilecek aktif okuma kaydı bulunamadı.' };
+
+    const silinenAd = db.okunanlar[index].kitapAdi || 'Kitap';
+    db.okunanlar.splice(index, 1);
+    dbKaydet(db);
+    return { success: true, message: `"${silinenAd}" okuma listenden çıkarıldı. 🗑️` };
+  }
+
   // 5. ÖĞRETMEN GİRİŞİ
   if (action === 'ogretmenGiris') {
     const ogrt = dogrulaOgretmen(params.pin);

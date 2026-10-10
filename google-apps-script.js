@@ -145,6 +145,9 @@ function istekYonlendir(params) {
     if (action === "ogrenciKitapGeriAl") {
       return jsonYanit(ogrenciKitapGeriAl(ss, params));
     }
+    if (action === "ogrenciKitapBirak") {
+      return jsonYanit(ogrenciKitapBirak(ss, params));
+    }
     if (action === "ogrenciAvatarGuncelle") {
       return jsonYanit(ogrenciAvatarGuncelle(ss, params));
     }
@@ -758,6 +761,38 @@ function ogrenciKitapGeriAl(ss, params) {
     }
   }
   return { success: false, message: "Geri alınacak onay bekleyen kayıt bulunamadı." };
+}
+
+/**
+ * Öğrenci / Veli yanlış kitaba tıkladıysa veya okumayı bırakmak isterse kaydı siler (Onaylandı olmayanlar için)
+ */
+function ogrenciKitapBirak(ss, params) {
+  const temizPin = String(params.pin || "").trim();
+  const kitapId = String(params.kitapId || "").trim();
+
+  const ogrSayfa = ss.getSheetByName(TABLO_ISIMLERI.OGRENCILER);
+  const okunanSayfa = ss.getSheetByName(TABLO_ISIMLERI.OKUNAN_KITAPLAR);
+  if (!ogrSayfa || !okunanSayfa) return { success: false, message: "Tablo bulunamadı." };
+
+  const ogrData = ogrSayfa.getDataRange().getValues();
+  let ogrenciId = null;
+  for (let i = 1; i < ogrData.length; i++) {
+    if (String(ogrData[i][3]).trim() === temizPin && String(ogrData[i][4]).toLowerCase() !== "hayır") {
+      ogrenciId = String(ogrData[i][0]);
+      break;
+    }
+  }
+  if (!ogrenciId) return { success: false, message: "Öğrenci doğrulanamadı." };
+
+  const okunanData = okunanSayfa.getDataRange().getValues();
+  for (let i = 1; i < okunanData.length; i++) {
+    if (String(okunanData[i][1]) === ogrenciId && String(okunanData[i][2]) === kitapId && String(okunanData[i][10]) !== "Onaylandı") {
+      const silinenAd = String(okunanData[i][3] || "Kitap");
+      okunanSayfa.deleteRow(i + 1);
+      return { success: true, message: `"${silinenAd}" okuma listenden çıkarıldı. 🗑️` };
+    }
+  }
+  return { success: false, message: "İptal edilecek aktif okuma kaydı bulunamadı." };
 }
 
 // ============================================================================

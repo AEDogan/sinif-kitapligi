@@ -400,7 +400,7 @@
       <div id="tabOgretmenOgrenciler" class="hidden space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-4 rounded-2xl border border-slate-200">
           <p class="text-xs text-slate-600 font-medium">
-            💡 Öğrencilerin adını, okul numarasını veya PIN kodunu <strong>✏️ Düzenle</strong> butonuyla değiştirebilirsiniz.
+            💡 Öğrencinin <strong>ismine tıklayarak</strong> o an okuduğu ve geçmişte okuduğu kitapları aşağı açılır pencerede görebilirsiniz. Bilgileri <strong>✏️ Düzenle</strong> ile değiştirebilirsiniz.
           </p>
           <button onclick="sinifPinListesiniKopyala()" class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold rounded-xl text-xs transition flex items-center gap-1.5">
             <span>📋</span> Veli PIN Listesini Kopyala / Yazdır
@@ -701,6 +701,9 @@
 
         <button type="submit" id="btnIlerlemeKaydet" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition text-base">
           Kaldığım Sayfayı Kaydet 💾
+        </button>
+        <button type="button" id="btnModalOkumayiBirak" onclick="modalIcindenOkumayiBirak()" class="hidden w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-extrabold rounded-xl border border-red-200 transition text-xs flex items-center justify-center gap-1.5">
+          <span>✖️</span> Bu Kitabı Okumayı Bırak / Yanlış Seçtim
         </button>
       </form>
     </div>
@@ -1817,10 +1820,15 @@
                 </div>
               </div>
             </div>
-            <div class="mt-4 pt-3 border-t border-slate-100">
+            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
               <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
-                      class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1">
+                      class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1">
                 <span>✏️</span> Sayfamı Güncelle / Bitirdim
+              </button>
+              <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')"
+                      title="Yanlış kitaba tıkladıysan veya okumayı bırakmak istiyorsan geri al"
+                      class="py-2.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 font-extrabold rounded-xl text-xs transition border border-red-200 flex items-center justify-center gap-1 shrink-0">
+                <span>✖️</span> Okumayı Bırak
               </button>
             </div>
           `;
@@ -1906,9 +1914,14 @@
             butonHtml = `
               <div class="space-y-1.5">
                 <div class="w-full py-1.5 bg-amber-50 text-amber-800 font-bold rounded-xl text-[11px] text-center">Öğretmen Onayında ⏳</div>
-                <button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-[11px] transition">
-                  ↩️ Yanlışlıkla Bitirdim Dedim (Devam Et)
-                </button>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-[11px] transition">
+                    ↩️ Devam Et
+                  </button>
+                  <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')" class="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-[11px] transition border border-red-200/80">
+                    ✖️ Tamamen İptal
+                  </button>
+                </div>
               </div>
             `;
           }
@@ -1916,10 +1929,16 @@
           const yuzde = Math.min(100, Math.round(((Number(devamKayit.kaldigiSayfa) || 0) / topSayfa) * 100));
           durumRozeti = `<span class="bg-blue-100 text-blue-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full">📖 ${Number(devamKayit.kaldigiSayfa) || 0}. Sayfa (%${yuzde})</span>`;
           butonHtml = `
-            <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
-                    class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-sm text-xs transition">
-              Sayfamı Güncelle / Bitirdim ✏️
-            </button>
+            <div class="space-y-1.5">
+              <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
+                      class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-sm text-xs transition">
+                Sayfamı Güncelle / Bitirdim ✏️
+              </button>
+              <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')"
+                      class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-[11px] transition border border-red-200/80">
+                ✖️ Okumayı Bırak / Yanlış Seçtim
+              </button>
+            </div>
           `;
         } else {
           butonHtml = `
@@ -1979,9 +1998,14 @@
         const yildizlar = '★'.repeat(yildizSayi) + '☆'.repeat(5 - yildizSayi);
 
         const geriAlButon = !onayliMi
-          ? `<button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="text-xs font-bold text-slate-500 hover:text-amber-700 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-xl transition">
-               ↩️ Okumaya Devam Et
-             </button>`
+          ? `<div class="flex flex-wrap items-center gap-1.5">
+               <button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="text-xs font-bold text-slate-500 hover:text-amber-700 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-xl transition">
+                 ↩️ Okumaya Devam Et
+               </button>
+               <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')" class="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition border border-red-200/80">
+                 ✖️ Tamamen İptal Et
+               </button>
+             </div>`
           : '';
 
         const card = document.createElement('div');
@@ -2029,6 +2053,39 @@
       }
     }
 
+    async function ogrenciOkumayiBirak(kitapId, kitapAdi) {
+      if (!aktifOgrenci) return;
+      const ad = kitapAdi || 'Bu kitabı';
+      if (!confirm(`"${ad}" kitabını okuma listenden çıkarmak (geri almak / okumayı bırakmak) istediğine emin misin?`)) return;
+
+      if (aktifApiHedefi()) {
+        try {
+          const data = await apiIstegiGonder({ action: 'ogrenciKitapBirak', pin: aktifOgrenci.pin, kitapId: kitapId });
+          if (data) {
+            toastGoster(data.message, data.success ? '🗑️' : '❌');
+            modalKapat('modalKitapBildir');
+            ogrenciGirisYap(null);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      const oncekiUzunluk = demoData.okunanlar.length;
+      demoData.okunanlar = demoData.okunanlar.filter(k => !(k.ogrenciId === aktifOgrenci.id && k.kitapId === kitapId && k.durum !== 'Onaylandı'));
+      if (demoData.okunanlar.length < oncekiUzunluk) {
+        demoKaydet();
+        toastGoster(`"${ad}" okuma listenden çıkarıldı. 🗑️`, '🗑️');
+        modalKapat('modalKitapBildir');
+        ogrenciDemoGiris(aktifOgrenci.pin);
+      }
+    }
+
+    function modalIcindenOkumayiBirak() {
+      const kitapId = document.getElementById('modalKitapId').value;
+      const kitapAdi = document.getElementById('modalKitapBaslik').innerText;
+      if (kitapId) ogrenciOkumayiBirak(kitapId, kitapAdi);
+    }
+
     function ogrenciCikisYap() {
       aktifOgrenci = null;
       sessionStorage.removeItem('kitapKurtlari_aktifOgrPin');
@@ -2068,6 +2125,12 @@
       const inpSayfa = document.getElementById('modalKaldigiSayfa');
       inpSayfa.max = toplamSayfa;
       inpSayfa.value = kaldigiSayfa > 0 ? kaldigiSayfa : 1;
+
+      const btnBirak = document.getElementById('btnModalOkumayiBirak');
+      if (btnBirak) {
+        if (devamKayit) btnBirak.classList.remove('hidden');
+        else btnBirak.classList.add('hidden');
+      }
 
       durumModuSec('devam');
       canliIlerlemeHesapla();
@@ -2440,24 +2503,31 @@
           const kalS = Math.min(topS, Math.max(0, Number(k.kaldigiSayfa) || 0));
           const yuzde = Math.min(100, Math.round((kalS / topS) * 100));
           const el = document.createElement('div');
-          el.className = 'bg-white p-4 rounded-2xl border border-blue-200 shadow-sm';
+          el.className = 'bg-white p-4 rounded-2xl border border-blue-200 shadow-sm flex flex-col justify-between gap-3';
           el.innerHTML = `
-            <div class="flex justify-between items-start">
-              <div>
-                <span class="font-black text-slate-800 text-sm">${escapeHtml(k.ogrenciAdi)}</span>
-                <p class="text-xs font-bold text-indigo-700">${escapeHtml(k.kitapAdi)}</p>
+            <div>
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="font-black text-slate-800 text-sm">${escapeHtml(k.ogrenciAdi)}</span>
+                  <p class="text-xs font-bold text-indigo-700">${escapeHtml(k.kitapAdi)}</p>
+                </div>
+                <span class="text-xs font-black text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">%${yuzde}</span>
               </div>
-              <span class="text-xs font-black text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">%${yuzde}</span>
+              <div class="mt-2.5">
+                <div class="flex justify-between text-[11px] text-slate-500 font-bold mb-1">
+                  <span>${kalS}. Sayfada</span>
+                  <span>Toplam: ${topS} Sayfa</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div class="bg-blue-500 h-full rounded-full" style="width: ${yuzde}%"></div>
+                </div>
+                ${k.ogretmenNotu ? `<p class="text-[11px] text-amber-800 mt-1.5 bg-amber-50 px-2 py-1 rounded">📌 İade Notunuz: ${escapeHtml(k.ogretmenNotu)}</p>` : ''}
+              </div>
             </div>
-            <div class="mt-2.5">
-              <div class="flex justify-between text-[11px] text-slate-500 font-bold mb-1">
-                <span>${kalS}. Sayfada</span>
-                <span>Toplam: ${topS} Sayfa</span>
-              </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div class="bg-blue-500 h-full rounded-full" style="width: ${yuzde}%"></div>
-              </div>
-              ${k.ogretmenNotu ? `<p class="text-[11px] text-amber-800 mt-1.5 bg-amber-50 px-2 py-1 rounded">📌 İade Notunuz: ${escapeHtml(k.ogretmenNotu)}</p>` : ''}
+            <div class="flex justify-end pt-2 border-t border-slate-100">
+              <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition">
+                🗑️ Okumayı İptal Et / Sil
+              </button>
             </div>
           `;
           devamList.appendChild(el);
@@ -2533,19 +2603,44 @@
         havuzContainer.appendChild(item);
       });
 
-      // 5. Öğrenci Listesi (Düzenle & Sil Butonları Eklendi!)
+      // 5. Öğrenci Listesi (İsme Tıklayınca Alta Açılır Okuma Detay Penceresi + Düzenle & Sil)
       const tbody = document.getElementById('ogretmenOgrenciTabloBody');
       tbody.innerHTML = '';
+      if (!window.acikOgrenciDetaylari) window.acikOgrenciDetaylari = new Set();
+
       ogretmenOgrenciCache.forEach(ogr => {
         const pinStr = String(ogr.pin || '');
         const gizliPin = '•'.repeat(Math.max(6, pinStr.length));
+        const ogrDevam = devamEdenler.filter(k => k.ogrenciId === ogr.id);
+        const ogrBekleyen = bekleyenler.filter(k => k.ogrenciId === ogr.id);
+        const ogrOnayli = onaylananlar.filter(k => k.ogrenciId === ogr.id);
+        const ogrGecmis = [...ogrBekleyen, ...ogrOnayli];
+        const acikMi = window.acikOgrenciDetaylari.has(ogr.id);
+
+        const aktifOkumaRozet = ogrDevam.length > 0
+          ? `<span class="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full">📖 ${ogrDevam.length} okuyor</span>`
+          : '';
+        const bekleyenRozet = ogrBekleyen.length > 0
+          ? `<span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full">⏳ ${ogrBekleyen.length} onayda</span>`
+          : '';
+
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition';
+        tr.className = 'hover:bg-indigo-50/40 transition';
         tr.innerHTML = `
           <td class="py-3 px-4 font-mono font-bold">${escapeHtml(ogr.numara || '-')}</td>
-          <td class="py-3 px-4 font-black text-slate-800">${escapeHtml(ogr.avatar || '🦊')} ${escapeHtml(ogr.adSoyad)}</td>
           <td class="py-3 px-4">
-            <span class="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full text-xs">
+            <button type="button" onclick="ogrenciDetayAcKapat('${escapeHtml(ogr.id)}')"
+                    class="text-left group flex flex-wrap items-center gap-2 font-black text-slate-800 hover:text-indigo-700 transition focus:outline-none"
+                    title="Öğrencinin okuduğu kitapların listesini ve kaldığı yeri görmek için tıklayın">
+              <span id="ogrDetayOk_${escapeHtml(ogr.id)}" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${acikMi ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'} group-hover:bg-indigo-600 group-hover:text-white text-xs font-black transition-transform duration-200" style="transform: ${acikMi ? 'rotate(180deg)' : 'rotate(0deg)'}">▾</span>
+              <span class="text-base">${escapeHtml(ogr.avatar || '🦊')}</span>
+              <span class="text-sm font-black text-indigo-950 group-hover:text-indigo-600 underline decoration-indigo-300 decoration-2 underline-offset-4">${escapeHtml(ogr.adSoyad)}</span>
+              ${aktifOkumaRozet}
+              ${bekleyenRozet}
+            </button>
+          </td>
+          <td class="py-3 px-4">
+            <span class="bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full text-xs">
               ${escapeHtml(ogr.sinif || (aktifOgretmen ? aktifOgretmen.sinif : '-'))}
             </span>
           </td>
@@ -2557,17 +2652,144 @@
           </td>
           <td class="py-3 px-4 font-extrabold text-emerald-700">${Number(ogr.okunanKitap) || 0} Kitap</td>
           <td class="py-3 px-4 text-slate-500 font-medium">${Number(ogr.toplamSayfa) || 0} Sayfa</td>
-          <td class="py-3 px-4 text-right space-x-1">
-            <button onclick="ogrenciDuzenleModalAc('${escapeHtml(ogr.id)}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1 hover:bg-indigo-50 rounded-xl transition">
+          <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+            <button onclick="ogrenciDetayAcKapat('${escapeHtml(ogr.id)}')" class="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1.5 rounded-xl border transition ${acikMi ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'}">
+              <span>📚</span> Okudukları
+            </button>
+            <button onclick="ogrenciDuzenleModalAc('${escapeHtml(ogr.id)}')" class="text-slate-600 hover:text-slate-900 text-xs font-bold px-2 py-1 hover:bg-slate-100 rounded-xl transition">
               ✏️ Düzenle
             </button>
-            <button onclick="ogrenciSil('${escapeHtml(ogr.id)}')" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1 hover:bg-red-50 rounded-xl transition">
+            <button onclick="ogrenciSil('${escapeHtml(ogr.id)}')" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded-xl transition">
               🗑️ Sil
             </button>
           </td>
         `;
         tbody.appendChild(tr);
+
+        // Alta Açılır Öğrenci Okuma Detay Penceresi (Şu An Okudukları & Geçmişte Okudukları)
+        const devamHtml = ogrDevam.length === 0
+          ? `<div class="bg-white/80 p-3.5 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400 text-center">Şu an aktif olarak okuduğu bir kitap yok.</div>`
+          : ogrDevam.map(k => {
+              const topS = Math.max(1, Number(k.toplamSayfa) || 1);
+              const kalS = Math.min(topS, Math.max(0, Number(k.kaldigiSayfa) || 0));
+              const yuzde = Math.min(100, Math.round((kalS / topS) * 100));
+              return `
+                <div class="bg-white p-3.5 rounded-xl border border-blue-200 shadow-sm space-y-2">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <p class="font-extrabold text-slate-800 text-xs sm:text-sm">📖 ${escapeHtml(k.kitapAdi)}</p>
+                      <p class="text-[11px] text-slate-500">${escapeHtml(k.yazar || '')} ${k.tarih ? '• Son okuma: ' + escapeHtml(k.tarih) : ''}</p>
+                    </div>
+                    <span class="text-[11px] font-black text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full shrink-0">${kalS}/${topS} Syf (%${yuzde})</span>
+                  </div>
+                  <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-blue-500 h-full rounded-full" style="width: ${yuzde}%"></div>
+                  </div>
+                  ${k.ogretmenNotu ? `<p class="text-[11px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg">📌 İade Notunuz: ${escapeHtml(k.ogretmenNotu)}</p>` : ''}
+                  <div class="flex justify-end pt-1">
+                    <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition">
+                      🗑️ Okumayı Bıraktır / Kaydı Sil
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('');
+
+        const gecmisHtml = ogrGecmis.length === 0
+          ? `<div class="bg-white/80 p-3.5 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400 text-center">Henüz tamamladığı bir kitap bulunmuyor.</div>`
+          : ogrGecmis.map(k => {
+              const onayliMi = k.durum === 'Onaylandı';
+              const ySayi = Math.min(5, Math.max(1, Number(k.yildiz) || 5));
+              const yildizlar = '★'.repeat(ySayi) + '☆'.repeat(5 - ySayi);
+              const rozet = onayliMi
+                ? `<span class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full">✅ Onaylandı</span>`
+                : `<span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full">⏳ Onay Bekliyor</span>`;
+              const aksiyonlar = onayliMi
+                ? `<button onclick="kitapOnayGeriAl('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition">↩️ Onayı Geri Al</button>
+                   <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition">🗑️ Sil</button>`
+                : `<button onclick="kitapOnayla('${escapeHtml(k.islemId)}')" class="text-[11px] font-extrabold text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1 rounded-lg transition">✅ Onayla</button>
+                   <button onclick="kitapIadeModalAc('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition">🔄 İade Et</button>
+                   <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition">🗑️ Sil</button>`;
+
+              return `
+                <div class="bg-white p-3.5 rounded-xl border ${onayliMi ? 'border-emerald-200' : 'border-amber-200'} shadow-sm space-y-1.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="font-extrabold text-slate-800 text-xs sm:text-sm">📚 ${escapeHtml(k.kitapAdi)}</p>
+                    ${rozet}
+                  </div>
+                  <p class="text-[11px] text-slate-500">
+                    ${k.yazar ? escapeHtml(k.yazar) + ' • ' : ''}${Number(k.toplamSayfa) || 0} Sayfa • <span class="text-amber-500 font-bold">${yildizlar}</span> ${k.tarih ? '• ' + escapeHtml(k.tarih) : ''}
+                  </p>
+                  ${k.yorum ? `<p class="text-[11px] text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 italic">💬 “${escapeHtml(k.yorum)}”</p>` : ''}
+                  <div class="flex flex-wrap items-center justify-end gap-1.5 pt-1">
+                    ${aksiyonlar}
+                  </div>
+                </div>
+              `;
+            }).join('');
+
+        const trDetay = document.createElement('tr');
+        trDetay.id = `ogrDetaySatir_${ogr.id}`;
+        trDetay.className = `${acikMi ? '' : 'hidden'} bg-indigo-50/30`;
+        trDetay.innerHTML = `
+          <td colspan="7" class="p-0 border-b border-indigo-100">
+            <div class="p-4 sm:p-5 border-l-4 border-indigo-500 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 class="text-xs sm:text-sm font-black text-indigo-950 flex items-center gap-2">
+                    <span>${escapeHtml(ogr.avatar || '🦊')}</span> ${escapeHtml(ogr.adSoyad)} — Tüm Okuma Geçmişi ve Kitap Listesi
+                  </h4>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Öğrencinin yanlış işaretlediği veya bıraktığı kitapları buradan doğrudan <strong>🗑️ Sil</strong> ile kaldırabilirsiniz.</p>
+                </div>
+                <button type="button" onclick="ogrenciDetayAcKapat('${escapeHtml(ogr.id)}')" class="text-xs font-bold text-slate-500 hover:text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
+                  ✕ Kapat
+                </button>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <div class="text-xs font-extrabold text-blue-800 flex items-center gap-1.5">
+                    <span>📖</span> Şu An Okuduğu Kitaplar (${ogrDevam.length})
+                  </div>
+                  <div class="space-y-2">${devamHtml}</div>
+                </div>
+                <div class="space-y-2">
+                  <div class="text-xs font-extrabold text-emerald-800 flex items-center gap-1.5">
+                    <span>⭐</span> Geçmişte Okuduğu & Onaydaki Kitaplar (${ogrGecmis.length})
+                  </div>
+                  <div class="space-y-2 max-h-72 overflow-y-auto pr-1">${gecmisHtml}</div>
+                </div>
+              </div>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(trDetay);
       });
+    }
+
+    function ogrenciDetayAcKapat(ogrenciId) {
+      if (!window.acikOgrenciDetaylari) window.acikOgrenciDetaylari = new Set();
+      const satir = document.getElementById(`ogrDetaySatir_${ogrenciId}`);
+      const ok = document.getElementById(`ogrDetayOk_${ogrenciId}`);
+      if (!satir) return;
+
+      const gizliMi = satir.classList.contains('hidden');
+      if (gizliMi) {
+        satir.classList.remove('hidden');
+        window.acikOgrenciDetaylari.add(ogrenciId);
+        if (ok) {
+          ok.style.transform = 'rotate(180deg)';
+          ok.classList.remove('bg-indigo-100', 'text-indigo-700');
+          ok.classList.add('bg-indigo-600', 'text-white');
+        }
+      } else {
+        satir.classList.add('hidden');
+        window.acikOgrenciDetaylari.delete(ogrenciId);
+        if (ok) {
+          ok.style.transform = 'rotate(0deg)';
+          ok.classList.remove('bg-indigo-600', 'text-white');
+          ok.classList.add('bg-indigo-100', 'text-indigo-700');
+        }
+      }
     }
 
     async function kitapOnayla(islemId) {
