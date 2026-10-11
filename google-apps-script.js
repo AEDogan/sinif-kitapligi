@@ -38,6 +38,28 @@ function benzersizIdUret(onEk) {
   return onEk + "-" + new Date().getTime().toString().slice(-6) + "-" + rastgele;
 }
 
+// Kısa PIN'lere yönelik çevrimiçi tahmin denemelerini sınırlayın.
+function girisDenemesiAnahtari(rol, kimlik) {
+  return "giris:" + rol + ":" + Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(kimlik || ""))
+  ).slice(0, 40);
+}
+
+function girisDenemesiKontrol(rol, kimlik) {
+  const cache = CacheService.getScriptCache();
+  const genelSinir = rol === "ogrenci" ? 150 : 30;
+  return Number(cache.get("giris:" + rol + ":toplam") || 0) < genelSinir
+    && Number(cache.get(girisDenemesiAnahtari(rol, kimlik)) || 0) < 5;
+}
+
+function basarisizGirisKaydet(rol, kimlik) {
+  const cache = CacheService.getScriptCache();
+  const anahtar = girisDenemesiAnahtari(rol, kimlik);
+  const genelAnahtar = "giris:" + rol + ":toplam";
+  cache.put(anahtar, String(Number(cache.get(anahtar) || 0) + 1), 15 * 60);
+  cache.put(genelAnahtar, String(Number(cache.get(genelAnahtar) || 0) + 1), 15 * 60);
+}
+
 // 1. İLK KURULUM FONKSİYONU
 function ilkKurulum() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -85,16 +107,17 @@ function ilkKurulum() {
     ayarSayfa.getRange("A1:C1").setFontWeight("bold").setBackground("#bfdbfe");
 
     ayarSayfa.appendRow(["AdminKullanici", "admin", "Sistem yöneticisi (Admin) kullanıcı adı"]);
-    ayarSayfa.appendRow(["AdminSifre", "admin123", "Sistem yöneticisi (Admin) giriş şifresi"]);
+    const ilkAdminSifresi = Utilities.getUuid().replace(/-/g, "").slice(0, 20);
+    ayarSayfa.appendRow(["AdminSifre", ilkAdminSifresi, "İlk kurulum şifresi; girişten sonra değiştirin"]);
+    console.log("İlk admin şifresi Ayarlar sayfasındaki AdminSifre satırına yazıldı.");
     ayarSayfa.appendRow(["KulupBaraji", "3", "Kitap Kurdu hedefi için gereken onaylı kitap sayısı"]);
     ayarSayfa.appendRow(["SinifAdi", "3-A Sınıfı", "Varsayılan Sınıf Adı"]);
   }
 }
 
-// 2. GET İSTEKLERİ (Salt Okunur Sorgular)
-function doGet(e) {
-  const params = (e && e.parameter) ? e.parameter : {};
-  return istekYonlendir(params);
+// Kimlik bilgileri ve veri işlemleri URL parametresiyle kabul edilmez.
+function doGet() {
+  return jsonYanit({ success: false, message: "API işlemleri için POST kullanın." });
 }
 
 // 3. POST İSTEKLERİ (Veri Yazma & Güvenli Giriş İşlemleri)
@@ -110,6 +133,22 @@ function doPost(e) {
   return istekYonlendir(params);
 }
 
+function varsayilanAdminSifresiniYenile(ss) {
+  if (String(getAyarlar(ss).AdminSifre) !== "admin123") return true;
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return false;
+  try {
+    if (String(getAyarlar(ss).AdminSifre) === "admin123") {
+      const ayarSayfa = ss.getSheetByName(TABLO_ISIMLERI.AYARLAR);
+      ayarKaydetVeyaGuncelle(ayarSayfa, "AdminSifre", Utilities.getUuid().replace(/-/g, "").slice(0, 20));
+      console.log("Eski varsayılan admin şifresi yenilendi. Yeni şifre Ayarlar sayfasındaki AdminSifre satırında.");
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return true;
+}
+
 function istekYonlendir(params) {
   const action = String(params.action || "").trim();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -117,6 +156,9 @@ function istekYonlendir(params) {
   // Tablolar henüz oluşturulmamışsa otomatik olarak ilk kurulumu çalıştır
   if (!ss.getSheetByName(TABLO_ISIMLERI.AYARLAR) || !ss.getSheetByName(TABLO_ISIMLERI.OGRETMENLER)) {
     ilkKurulum();
+  }
+  if (!varsayilanAdminSifresiniYenile(ss)) {
+    return jsonYanit({ success: false, message: "Sistem hazırlanıyor. Birkaç saniye sonra tekrar deneyin." });
   }
 
   // Yazma işlemlerinde LockService zorunlu kontrolü
@@ -230,10 +272,14 @@ function istekYonlendir(params) {
 // ============================================================================
 
 function dogrulaAdmin(ss, kullaniciAdi, sifre) {
+  const kimlik = String(kullaniciAdi || "") + ":" + String(sifre || "");
+  if (!girisDenemesiKontrol("admin", kimlik)) return false;
   const ayarlar = getAyarlar(ss);
   const beklenenKullanici = String(ayarlar.AdminKullanici || "admin").trim();
-  const beklenenSifre = String(ayarlar.AdminSifre || "admin123").trim();
-  return String(kullaniciAdi || "").trim() === beklenenKullanici && String(sifre || "").trim() === beklenenSifre;
+  const beklenenSifre = String(ayarlar.AdminSifre || "").trim();
+  const gecerli = Boolean(beklenenSifre) && String(kullaniciAdi || "").trim() === beklenenKullanici && String(sifre || "").trim() === beklenenSifre;
+  if (!gecerli) basarisizGirisKaydet("admin", kimlik);
+  return gecerli;
 }
 
 function adminGiris(ss, kullaniciAdi, sifre) {
@@ -460,8 +506,8 @@ function adminAyarGuncelle(ss, params) {
   const yeniSifre = String(params.yeniAdminSifre || params.adminSifre || "").trim();
   const yeniBaraj = Math.max(1, Number(params.kulupBaraji) || 3);
 
-  if (!yeniKullanici || yeniSifre.length < 4) {
-    return { success: false, message: "Admin kullanıcı adı boş olamaz ve şifre en az 4 karakter olmalıdır." };
+  if (!yeniKullanici || yeniSifre.length < 12) {
+    return { success: false, message: "Admin kullanıcı adı boş olamaz ve yeni şifre en az 12 karakter olmalıdır." };
   }
 
   ayarKaydetVeyaGuncelle(ayarSayfa, "AdminKullanici", yeniKullanici);
@@ -493,6 +539,9 @@ function ayarKaydetVeyaGuncelle(ayarSayfa, anahtar, deger) {
 
 function ogrenciGiris(ss, pin) {
   const temizPin = String(pin || "").trim();
+  if (!girisDenemesiKontrol("ogrenci", temizPin)) {
+    return { success: false, message: "Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin." };
+  }
   if (!temizPin) {
     return { success: false, message: "Lütfen 6 haneli PIN kodunu girin." };
   }
@@ -526,6 +575,7 @@ function ogrenciGiris(ss, pin) {
   }
 
   if (!ogrenci) {
+    basarisizGirisKaydet("ogrenci", temizPin);
     return { success: false, message: "PIN kodu bulunamadı. Lütfen kontrol edip tekrar dene veya öğretmeninden öğren!" };
   }
 
@@ -1300,6 +1350,7 @@ function ogrenciSil(ss, params) {
 function dogrulaOgretmen(ss, girilenPin) {
   const temizPin = String(girilenPin || "").trim();
   if (!temizPin) return null;
+  if (!girisDenemesiKontrol("ogretmen", temizPin)) return null;
 
   const ogretmenler = getOgretmenlerListesi(ss);
   for (let i = 0; i < ogretmenler.length; i++) {
@@ -1307,6 +1358,7 @@ function dogrulaOgretmen(ss, girilenPin) {
       return ogretmenler[i];
     }
   }
+  basarisizGirisKaydet("ogretmen", temizPin);
   return null;
 }
 
@@ -1375,7 +1427,7 @@ function getAyarlar(ss) {
   const ayarSayfa = ss.getSheetByName(TABLO_ISIMLERI.AYARLAR);
   const ayarlar = {
     AdminKullanici: "admin",
-    AdminSifre: "admin123",
+    AdminSifre: "",
     KulupBaraji: 3,
     SinifAdi: "3-A Sınıfı"
   };

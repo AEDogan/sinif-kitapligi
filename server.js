@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 
 const PORT = 8080;
 const DB_FILE = path.join(__dirname, 'veritabani.json');
@@ -54,7 +55,7 @@ function varsayilanVeritabaniOlustur() {
       SinifAdi: 'Kitap Kurtları',
       KulupBaraji: 3,
       AdminKullanici: 'admin',
-      AdminSifre: 'admin123'
+      AdminSifre: crypto.randomBytes(15).toString('base64url')
     },
     ogretmenler: [],
     havuz: [],
@@ -68,6 +69,11 @@ function dbOku() {
     try {
       const parsed = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
       if (parsed && parsed.ayarlar && Array.isArray(parsed.ogrenciler)) {
+        if (parsed.ayarlar.AdminSifre === 'admin123') {
+          parsed.ayarlar.AdminSifre = crypto.randomBytes(15).toString('base64url');
+          dbKaydet(parsed);
+          console.info('Eski varsayılan admin şifresi yenilendi. Yeni şifre veritabani.json içindeki ayarlar.AdminSifre alanında.');
+        }
         if (!Array.isArray(parsed.ogretmenler)) parsed.ogretmenler = [];
         if (!Array.isArray(parsed.havuz)) parsed.havuz = [];
         if (!Array.isArray(parsed.okunanlar)) parsed.okunanlar = [];
@@ -79,6 +85,7 @@ function dbOku() {
   }
   const ilk = varsayilanVeritabaniOlustur();
   dbKaydet(ilk);
+  console.info('İlk admin şifresi veritabani.json dosyasındaki ayarlar.AdminSifre alanına yazıldı. Girişten sonra değiştirin.');
   return ilk;
 }
 
@@ -99,14 +106,26 @@ function apiIslemCalistir(params, ip) {
   const bugun = bugunTarihFormatli();
 
   // Yardımcı doğrulamalar
-  const dogrulaAdmin = (k, s) =>
-    String(k || '').trim() === String(db.ayarlar.AdminKullanici || 'admin').trim() &&
-    String(s || '').trim() === String(db.ayarlar.AdminSifre || 'admin123').trim();
+  const dogrulaAdmin = (k, s) => {
+    const gecerli = String(k || '').trim() === String(db.ayarlar.AdminKullanici || 'admin').trim() &&
+      Boolean(String(db.ayarlar.AdminSifre || '').trim()) &&
+      String(s || '').trim() === String(db.ayarlar.AdminSifre || '').trim();
+    if (!gecerli) basarisizGirisKaydet(ip);
+    return gecerli;
+  };
 
   const dogrulaOgretmen = (pin) => {
     const p = String(pin || '').trim();
     if (!p) return null;
-    return db.ogretmenler.find(o => String(o.pin).trim() === p) || null;
+    const ogretmen = db.ogretmenler.find(o => String(o.pin).trim() === p) || null;
+    if (!ogretmen) basarisizGirisKaydet(ip);
+    return ogretmen;
+  };
+
+  const dogrulaOgrenci = (pin) => {
+    const ogrenci = db.ogrenciler.find(o => String(o.pin).trim() === String(pin || '').trim()) || null;
+    if (!ogrenci) basarisizGirisKaydet(ip);
+    return ogrenci;
   };
 
   const adminPanelVerisi = () => {
@@ -163,9 +182,8 @@ function apiIslemCalistir(params, ip) {
   // 1. ÖĞRENCİ GİRİŞİ
   if (action === 'ogrenciGiris') {
     const pin = String(params.pin || '').trim();
-    const ogr = db.ogrenciler.find(o => String(o.pin).trim() === pin);
+    const ogr = dogrulaOgrenci(pin);
     if (!ogr) {
-      basarisizGirisKaydet(ip);
       return { success: false, message: 'PIN kodu bulunamadı. Lütfen kontrol edip tekrar dene veya öğretmeninden öğren!' };
     }
 
@@ -224,7 +242,7 @@ function apiIslemCalistir(params, ip) {
     const pin = String(params.pin || '').trim();
     const izinli = ['🦊', '🐼', '🦁', '🦉', '🦄', '🐸', '🚀', '🐱', '🐰', '🐨'];
     const avatar = izinli.includes(params.avatar) ? params.avatar : '🦊';
-    const ogr = db.ogrenciler.find(o => String(o.pin).trim() === pin);
+    const ogr = dogrulaOgrenci(pin);
     if (!ogr) return { success: false, message: 'Öğrenci bulunamadı.' };
     ogr.avatar = avatar;
     dbKaydet(db);
@@ -235,7 +253,7 @@ function apiIslemCalistir(params, ip) {
   if (action === 'kitapIlerlemeKaydet') {
     const pin = String(params.pin || '').trim();
     const kitapId = String(params.kitapId || '').trim();
-    const ogr = db.ogrenciler.find(o => String(o.pin).trim() === pin);
+    const ogr = dogrulaOgrenci(pin);
     if (!ogr) return { success: false, message: 'Geçersiz öğrenci PIN kodu!' };
 
     const ogrSinif = ogr.sinif || db.ayarlar.SinifAdi;
@@ -299,7 +317,7 @@ function apiIslemCalistir(params, ip) {
   if (action === 'ogrenciKitapGeriAl') {
     const pin = String(params.pin || '').trim();
     const kitapId = String(params.kitapId || '').trim();
-    const ogr = db.ogrenciler.find(o => String(o.pin).trim() === pin);
+    const ogr = dogrulaOgrenci(pin);
     if (!ogr) return { success: false, message: 'Öğrenci doğrulanamadı.' };
 
     const kayit = db.okunanlar.find(k => k.ogrenciId === ogr.id && k.kitapId === kitapId && k.durum === 'Onay Bekliyor');
@@ -315,7 +333,7 @@ function apiIslemCalistir(params, ip) {
   if (action === 'ogrenciKitapBirak') {
     const pin = String(params.pin || '').trim();
     const kitapId = String(params.kitapId || '').trim();
-    const ogr = db.ogrenciler.find(o => String(o.pin).trim() === pin);
+    const ogr = dogrulaOgrenci(pin);
     if (!ogr) return { success: false, message: 'Öğrenci doğrulanamadı.' };
 
     const index = db.okunanlar.findIndex(k => k.ogrenciId === ogr.id && k.kitapId === kitapId && k.durum !== 'Onaylandı');
@@ -331,7 +349,6 @@ function apiIslemCalistir(params, ip) {
   if (action === 'ogretmenGiris') {
     const ogrt = dogrulaOgretmen(params.pin);
     if (!ogrt) {
-      basarisizGirisKaydet(ip);
       return { success: false, message: 'Hatalı Öğretmen PIN kodu!' };
     }
 
@@ -649,7 +666,6 @@ function apiIslemCalistir(params, ip) {
     const k = params.kullaniciAdi || params.adminKullanici;
     const s = params.sifre || params.adminSifre;
     if (!dogrulaAdmin(k, s)) {
-      basarisizGirisKaydet(ip);
       return { success: false, message: 'Hatalı Admin kullanıcı adı veya şifresi!' };
     }
     return adminPanelVerisi();
@@ -736,8 +752,8 @@ function apiIslemCalistir(params, ip) {
     const yeniSifre = String(params.yeniAdminSifre || db.ayarlar.AdminSifre).trim();
     const yeniBaraj = Math.max(1, Number(params.kulupBaraji) || 3);
 
-    if (!yeniKullanici || yeniSifre.length < 4) {
-      return { success: false, message: 'Kullanıcı adı boş olamaz ve şifre en az 4 karakter olmalıdır.' };
+    if (!yeniKullanici || yeniSifre.length < 12) {
+      return { success: false, message: 'Kullanıcı adı boş olamaz ve yeni şifre en az 12 karakter olmalıdır.' };
     }
 
     db.ayarlar.AdminKullanici = yeniKullanici;
@@ -779,10 +795,8 @@ const server = http.createServer((req, res) => {
 
   if (pathname === '/api') {
     if (req.method === 'GET') {
-      const params = Object.fromEntries(parsedUrl.searchParams.entries());
-      const sonuc = apiIslemCalistir(params, ip);
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-      res.end(JSON.stringify(sonuc));
+      res.writeHead(405, { 'Content-Type': 'application/json; charset=utf-8', 'Allow': 'POST', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ success: false, message: 'API işlemleri için POST kullanın.' }));
       return;
     }
 

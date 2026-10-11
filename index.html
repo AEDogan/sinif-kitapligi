@@ -113,29 +113,11 @@
 
         <form onsubmit="ogrenciGirisYap(event)" class="space-y-4">
           <div class="flex items-center gap-2">
-            <!-- 6 Eşit Aralıklı Görsel PIN Kutusu + Üstünde Şeffaf Gerçek Input -->
-            <div class="relative flex-1" onclick="document.getElementById('ogrenciPinInput').focus()">
-              <input
-                type="password"
-                id="ogrenciPinInput"
-                maxlength="6"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                autocomplete="off"
-                oninput="ogrenciPinKutulariGuncelle()"
-                onfocus="ogrenciPinKutulariGuncelle()"
-                onblur="ogrenciPinKutulariGuncelle()"
-                required
-                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              />
-              <div id="ogrenciPinSlotGrid" class="grid grid-cols-6 gap-2">
-                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
-                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
-                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
-                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
-                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
-                <div class="pin-slot h-14 rounded-2xl border-2 border-amber-300 bg-amber-50/60 flex items-center justify-center text-2xl font-black text-amber-400 transition-all select-none">•</div>
-              </div>
+            <div class="flex-1">
+              <input type="password" id="ogrenciPinInput" maxlength="6" inputmode="numeric"
+                     pattern="[0-9]{6}" autocomplete="off" aria-label="6 haneli öğrenci PIN kodu"
+                     placeholder="6 haneli PIN" oninput="ogrenciPinKutulariGuncelle()" required
+                     class="w-full h-14 rounded-2xl border-2 border-amber-300 bg-white px-4 text-center text-xl font-black tracking-[0.3em] text-amber-950 placeholder:tracking-normal placeholder:text-sm focus:border-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-100" />
             </div>
 
             <button type="button" onclick="pinGorunurlukDegistir('ogrenciPinInput', 'btnOgrPinGoster')" id="btnOgrPinGoster"
@@ -242,6 +224,9 @@
             </div>
             <div id="ogrPanelHedefAltYazi" class="text-[10px] text-amber-100 font-semibold mt-1">Kitap Kurdu Hedefi</div>
           </div>
+      <button id="btnHizliKitabaDon" type="button" class="hidden w-full lg:w-auto px-5 py-3 rounded-2xl bg-white text-amber-900 font-extrabold shadow-md hover:bg-amber-50 focus-visible:outline-4 focus-visible:outline-amber-200">
+        📖 Son okuduğum kitaba dön
+      </button>
         </div>
       </div>
 
@@ -400,13 +385,15 @@
       <div id="tabOgretmenOgrenciler" class="hidden space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2 bg-white p-4 rounded-2xl border border-slate-200">
           <p class="text-xs text-slate-600 font-medium">
-            💡 Öğrencinin <strong>ismine tıklayarak</strong> o an okuduğu ve geçmişte okuduğu kitapları aşağı açılır pencerede görebilirsiniz. Bilgileri <strong>✏️ Düzenle</strong> ile değiştirebilirsiniz.
+            <span class="md:hidden">💡 Karttaki <strong>Okuma ayrıntıları</strong> bölümünü açarak kitapları görebilirsiniz.</span>
+            <span class="hidden md:inline">💡 Öğrencinin <strong>ismine tıklayarak</strong> okuduğu kitapları görebilirsiniz.</span>
+            Bilgileri <strong>✏️ Düzenle</strong> ile değiştirebilirsiniz.
           </p>
           <button onclick="sinifPinListesiniKopyala()" class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold rounded-xl text-xs transition flex items-center gap-1.5">
             <span>📋</span> Veli PIN Listesini Kopyala / Yazdır
           </button>
         </div>
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
@@ -424,6 +411,7 @@
             </table>
           </div>
         </div>
+        <div id="ogretmenOgrenciKartlari" class="md:hidden space-y-3"></div>
       </div>
     </section>
 
@@ -907,10 +895,30 @@
         .replace(/'/g, '&#39;');
     }
 
+    const guvenliKartIslemleri = new Set([
+      'adminOgretmenDuzenleBaslat', 'adminOgretmenSil', 'havuzdanKitapSil',
+      'kitapDuzenleModalAc', 'kitapIadeModalAc', 'kitapModalAcId',
+      'kitapOnayGeriAl', 'kitapOnayla', 'kitapSil', 'ogrenciDetayAcKapat',
+      'ogrenciDuzenleModalAc', 'ogrenciKitabiGeriAl', 'ogrenciOkumayiBirak',
+      'ogrenciSil', 'tabloPinGosterGizle'
+    ]);
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action]');
+      if (!button || !guvenliKartIslemleri.has(button.dataset.action)) return;
+      const fn = window[button.dataset.action];
+      if (typeof fn !== 'function') return;
+      const args = [];
+      if (button.dataset.action === 'tabloPinGosterGizle') args.push(button);
+      if (button.hasAttribute('data-arg1')) args.push(button.dataset.arg1);
+      if (button.hasAttribute('data-arg2')) args.push(button.dataset.arg2);
+      fn(...args);
+    });
+
     // Google Sheets Web App URL (Tüm cihazlar otomatik olarak bu Google Sheets tablosuna bağlanır)
     const VARSAYILAN_GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzTuEPh9DQOtOP-xaRi0i1V9bHtoW6o2RCSs3JXvLeG38fUv9qr5cvqlHPA-qaYEaRdww/exec';
+    // Önceki sürümde paylaşılan ?api= bağlantıları aynı veri kaynağına yönelmeye devam eder.
     const urlApiParam = new URLSearchParams(window.location.search).get('api');
-    if (urlApiParam && urlApiParam.startsWith('https://script.google.com/')) {
+    if (urlApiParam && /^https:\/\/script\.google\.com\/macros\/s\/[^/?#]+\/exec$/.test(urlApiParam.trim())) {
       localStorage.setItem('kitapKurtlari_apiUrl', urlApiParam.trim());
     }
     let kayitliUrl = (localStorage.getItem('kitapKurtlari_apiUrl') || '').trim();
@@ -929,6 +937,15 @@
     let adminOgretmenCache = [];
     let seciliMod = 'devam';
     let aktifHavuzFiltre = 'tumu';
+    const sonKayitDurumlari = new Map();
+
+    function kitapKayitDurumuHtml(kitapId, varsayilanDurum) {
+      const durum = sonKayitDurumlari.get(String(kitapId)) || varsayilanDurum;
+      if (durum === 'gonderilemedi') return '<p class="mt-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm font-bold text-red-800" role="status">⚠️ Gönderilemedi. Bağlantını kontrol edip yeniden kaydet.</p>';
+      if (durum === 'ulasdi') return '<p class="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm font-bold text-emerald-800" role="status">✅ Kaydedildi · Öğretmenin görebilir</p>';
+      if (durum === 'onayda') return '<p class="mt-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-sm font-bold text-amber-900" role="status">⏳ Öğretmene ulaştı · Onay bekliyor</p>';
+      return '';
+    }
 
     function bugunTarihFormatli() {
       const d = new Date();
@@ -953,7 +970,7 @@
 
     // Yerel / Çevrimdışı veri deposu (Demo veriler tamamen kaldırıldı, temiz başlangıç)
     let demoData = JSON.parse(localStorage.getItem('kitapKurtlari_veri_v1')) || {
-      ayarlar: { SinifAdi: 'Kitap Kurtları', KulupBaraji: 3, AdminKullanici: 'admin', AdminSifre: 'admin123' },
+      ayarlar: { SinifAdi: 'Kitap Kurtları', KulupBaraji: 3, AdminKullanici: 'admin', AdminSifre: '' },
       ogretmenler: [],
       havuz: [],
       ogrenciler: [],
@@ -969,8 +986,9 @@
     // 2. Yerel ağda (localhost / 192.168.x.x) çalışıyorsa yerel Node.js (/api) sunucusuna bağlanır.
     // 3. GitHub Pages (*.github.io) üzerinde Google Apps Script URL henüz girilmemişse tarayıcı veritabanını kullanır.
     function aktifApiHedefi() {
-      if (apiUrl) return apiUrl;
       const host = window.location.hostname || '';
+      if (host === 'localhost' || host === '127.0.0.1') return '/api';
+      if (apiUrl) return apiUrl;
       if (window.location.protocol.startsWith('http') && !host.endsWith('github.io')) return '/api';
       return '';
     }
@@ -1047,23 +1065,11 @@
         }
       });
 
-      // Oturum hatırlama (Sayfa yenilendiğinde veli/öğrenci tekrar PIN girmek zorunda kalmasın)
-      const kayitliOgrPin = sessionStorage.getItem('kitapKurtlari_aktifOgrPin');
-      const kayitliOgrtPin = sessionStorage.getItem('kitapKurtlari_aktifOgrtPin');
-
+      // Önceki sürümlerin düz metin PIN kayıtlarını temizle.
+      sessionStorage.removeItem('kitapKurtlari_aktifOgrPin');
+      sessionStorage.removeItem('kitapKurtlari_aktifOgrtPin');
       ogrenciPinKutulariGuncelle();
-      if (kayitliOgrPin) {
-        ekranDegistir('ogrenciGiris');
-        document.getElementById('ogrenciPinInput').value = kayitliOgrPin;
-        ogrenciPinKutulariGuncelle();
-        ogrenciGirisYap(null);
-      } else if (kayitliOgrtPin) {
-        ekranDegistir('ogretmenGiris');
-        document.getElementById('ogretmenSifreInput').value = kayitliOgrtPin;
-        ogretmenGirisYap(null);
-      } else {
-        ekranDegistir('ogrenciGiris');
-      }
+      ekranDegistir('ogrenciGiris');
     });
 
     function logoTiklandi() {
@@ -1176,27 +1182,9 @@
 
     function ogrenciPinKutulariGuncelle() {
       const inp = document.getElementById('ogrenciPinInput');
-      const grid = document.getElementById('ogrenciPinSlotGrid');
-      if (!inp || !grid) return;
-
-      // Yalnızca rakamları tut ve en fazla 6 haneye sınırla
+      if (!inp) return;
       const temiz = inp.value.replace(/\D/g, '').slice(0, 6);
       if (inp.value !== temiz) inp.value = temiz;
-
-      const kutular = grid.querySelectorAll('.pin-slot');
-      kutular.forEach((kutu, idx) => {
-        const karakter = temiz[idx];
-        if (karakter !== undefined) {
-          kutu.innerText = ogrenciPinAcikMi ? karakter : '●';
-          kutu.className = 'pin-slot h-12 sm:h-14 rounded-xl border-2 border-amber-500 bg-white flex items-center justify-center text-xl sm:text-2xl font-black text-amber-900 shadow-sm transition-all scale-[1.02]';
-        } else if (idx === temiz.length) {
-          kutu.innerText = '•';
-          kutu.className = 'pin-slot h-12 sm:h-14 rounded-xl border-2 border-amber-400 bg-amber-50 flex items-center justify-center text-xl sm:text-2xl font-black text-amber-400 transition-all';
-        } else {
-          kutu.innerText = '•';
-          kutu.className = 'pin-slot h-12 sm:h-14 rounded-xl border-2 border-amber-200 bg-amber-50/60 flex items-center justify-center text-xl sm:text-2xl font-black text-amber-300 transition-all';
-        }
-      });
     }
 
     function pinGorunurlukDegistir(inputId, btnId) {
@@ -1204,8 +1192,8 @@
       const btn = document.getElementById(btnId);
       if (inputId === 'ogrenciPinInput') {
         ogrenciPinAcikMi = !ogrenciPinAcikMi;
+        inp.type = ogrenciPinAcikMi ? 'text' : 'password';
         btn.innerText = ogrenciPinAcikMi ? '🙈' : '👁️';
-        ogrenciPinKutulariGuncelle();
         return;
       }
       if (inp.type === 'password') {
@@ -1311,7 +1299,8 @@
             return;
           }
         } catch (err) {
-          console.warn('Google Sheets bağlantısı henüz aktif değil, yerel mod kullanılıyor:', err);
+          toastGoster('Bağlantı kurulamadı. Lütfen tekrar deneyin.', '⚠️');
+          return;
         }
       }
 
@@ -1350,6 +1339,8 @@
           }
         } catch (err) {
           console.error(err);
+          toastGoster('Bağlantı kurulamadı.', '❌');
+          return;
         }
       }
 
@@ -1420,7 +1411,7 @@
             </span>
           </td>
           <td class="py-3.5 px-4">
-            <button type="button" onclick="tabloPinGosterGizle(this, '${escapeHtml(pinStr)}')" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
+            <button type="button" data-action="tabloPinGosterGizle" data-arg1="${escapeHtml(pinStr)}" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
               <span class="pin-deger">${gizliPin}</span>
               <span class="pin-ikon text-[11px] opacity-70">👁️</span>
             </button>
@@ -1429,10 +1420,10 @@
             ${Number(ogrt.ogrenciSayisi) || 0} Öğrenci • <span class="text-emerald-700">${Number(ogrt.onayliKitapSayisi) || 0} Kitap</span> • ${Number(ogrt.toplamSayfa) || 0} Sayfa
           </td>
           <td class="py-3.5 px-4 text-right space-x-1">
-            <button onclick="adminOgretmenDuzenleBaslat('${escapeHtml(ogrt.id)}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
+            <button data-action="adminOgretmenDuzenleBaslat" data-arg1="${escapeHtml(ogrt.id)}" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
               ✏️ Düzenle
             </button>
-            <button onclick="adminOgretmenSil('${escapeHtml(ogrt.id)}')" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
+            <button data-action="adminOgretmenSil" data-arg1="${escapeHtml(ogrt.id)}" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
               🗑️ Sil
             </button>
           </td>
@@ -1508,7 +1499,8 @@
             return;
           }
         } catch (err) {
-          console.warn('Uzak sunucuya ulaşılamadı, yerel veritabanına kaydediliyor:', err);
+          toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌');
+          return;
         }
       }
 
@@ -1556,7 +1548,8 @@
             return;
           }
         } catch (err) {
-          console.warn('Uzak sunucuya ulaşılamadı, yerel veritabanından siliniyor:', err);
+          toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌');
+          return;
         }
       }
 
@@ -1593,7 +1586,8 @@
             return;
           }
         } catch (err) {
-          console.warn('Uzak sunucuya ulaşılamadı, yerel ayarlar güncelleniyor:', err);
+          toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌');
+          return;
         }
       }
 
@@ -1621,7 +1615,7 @@
             adminPaneliDoldur(data);
             return;
           }
-        } catch (e) {}
+        } catch (e) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       localStorage.removeItem('kitapKurtlari_veri_v1');
       location.reload();
@@ -1642,7 +1636,7 @@
         try {
           const data = await apiIstegiGonder({ action: 'ogrenciGiris', pin: pin });
           if (data && data.success) {
-            sessionStorage.setItem('kitapKurtlari_aktifOgrPin', pin);
+            if (aktifOgrenci && aktifOgrenci.id !== data.ogrenci.id) sonKayitDurumlari.clear();
             const bugun = bugunTarihFormatli();
             genelHavuz = (data.havuz || []).filter(k => !k.aktifTarih || String(k.aktifTarih).slice(0, 10) <= bugun);
             aktifOgrenci = {
@@ -1660,7 +1654,8 @@
             return;
           }
         } catch (err) {
-          toastGoster('Çevrimdışı modda giriş yapılıyor.', '⚠️');
+          toastGoster('Bağlantı kurulamadı. Lütfen tekrar deneyin.', '⚠️');
+          return;
         }
       }
 
@@ -1674,7 +1669,6 @@
         toastGoster('Hatalı PIN! Lütfen tekrar dene veya öğretmeninden öğren.', '❌');
         return;
       }
-      sessionStorage.setItem('kitapKurtlari_aktifOgrPin', pin);
       const ogrt = demoData.ogretmenler.find(t => t.id === ogr.ogretmenId || t.sinif === ogr.sinif);
       const ogrSinif = ogr.sinif || (ogrt ? ogrt.sinif : demoData.ayarlar.SinifAdi);
       const bugun = bugunTarihFormatli();
@@ -1728,15 +1722,27 @@
     async function avatarDegistir(yeniAvatar) {
       document.getElementById('avatarSeciciKutu').classList.add('hidden');
       if (!aktifOgrenci) return;
+      const eskiAvatar = aktifOgrenci.avatar;
       aktifOgrenci.avatar = yeniAvatar;
       document.getElementById('ogrPanelAvatar').innerText = yeniAvatar;
 
       if (aktifApiHedefi()) {
         try {
           const data = await apiIstegiGonder({ action: 'ogrenciAvatarGuncelle', pin: aktifOgrenci.pin, avatar: yeniAvatar });
-          if (data && data.message) toastGoster(data.message, yeniAvatar);
+          if (!data || !data.success) {
+            aktifOgrenci.avatar = eskiAvatar;
+            document.getElementById('ogrPanelAvatar').innerText = eskiAvatar;
+            toastGoster((data && data.message) || 'Avatar kaydedilemedi.', '❌');
+            return;
+          }
+          toastGoster(data.message, yeniAvatar);
           return;
-        } catch (e) {}
+        } catch (e) {
+          aktifOgrenci.avatar = eskiAvatar;
+          document.getElementById('ogrPanelAvatar').innerText = eskiAvatar;
+          toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌');
+          return;
+        }
       }
       const ogr = demoData.ogrenciler.find(o => o.id === aktifOgrenci.id);
       if (ogr) {
@@ -1759,6 +1765,11 @@
       document.getElementById('ogrPanelAvatar').innerText = aktifOgrenci.avatar || '🦊';
       document.getElementById('ogrPanelAd').innerText = aktifOgrenci.adSoyad;
       document.getElementById('ogrPanelNumara').innerText = `Okul No: ${aktifOgrenci.numara || '-'}`;
+      const hizliDon = document.getElementById('btnHizliKitabaDon');
+      const ilkKitap = (aktifOgrenci.devamEdenler || [])[0];
+      hizliDon.classList.toggle('hidden', !ilkKitap);
+      hizliDon.textContent = ilkKitap ? `📖 ${ilkKitap.kitapAdi} · Kaldığım sayfaya dön` : '';
+      hizliDon.onclick = ilkKitap ? () => kitapModalAcId(ilkKitap.kitapId) : null;
 
       const okunan = Number(aktifOgrenci.istatistik.onaylananKitap) || 0;
       const baraj = Math.max(1, Number(aktifOgrenci.istatistik.kulupBaraji) || 3);
@@ -1810,6 +1821,7 @@
               </div>
               <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(k.yazar)} ${k.tarih ? '• Son okuma: ' + escapeHtml(k.tarih) : ''}</p>
               ${ogretmenNotuHtml}
+              ${kitapKayitDurumuHtml(k.kitapId, 'ulasdi')}
               <div class="mt-3">
                 <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
                   <span>Kaldığım: ${kalSayfa}. Sayfa</span>
@@ -1821,11 +1833,11 @@
               </div>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
-              <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
+              <button data-action="kitapModalAcId" data-arg1="${escapeHtml(k.kitapId)}"
                       class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1">
                 <span>✏️</span> Sayfamı Güncelle / Bitirdim
               </button>
-              <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')"
+              <button data-action="ogrenciOkumayiBirak" data-arg1="${escapeHtml(k.kitapId)}" data-arg2="${escapeHtml(k.kitapAdi)}"
                       title="Yanlış kitaba tıkladıysan veya okumayı bırakmak istiyorsan geri al"
                       class="py-2.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 font-extrabold rounded-xl text-xs transition border border-red-200 flex items-center justify-center gap-1 shrink-0">
                 <span>✖️</span> Okumayı Bırak
@@ -1915,10 +1927,10 @@
               <div class="space-y-1.5">
                 <div class="w-full py-1.5 bg-amber-50 text-amber-800 font-bold rounded-xl text-[11px] text-center">Öğretmen Onayında ⏳</div>
                 <div class="grid grid-cols-2 gap-1.5">
-                  <button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-[11px] transition">
+                  <button data-action="ogrenciKitabiGeriAl" data-arg1="${escapeHtml(k.kitapId)}" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-[11px] transition">
                     ↩️ Devam Et
                   </button>
-                  <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')" class="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-[11px] transition border border-red-200/80">
+                  <button data-action="ogrenciOkumayiBirak" data-arg1="${escapeHtml(k.kitapId)}" data-arg2="${escapeHtml(k.kitapAdi)}" class="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-[11px] transition border border-red-200/80">
                     ✖️ Tamamen İptal
                   </button>
                 </div>
@@ -1930,11 +1942,11 @@
           durumRozeti = `<span class="bg-blue-100 text-blue-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full">📖 ${Number(devamKayit.kaldigiSayfa) || 0}. Sayfa (%${yuzde})</span>`;
           butonHtml = `
             <div class="space-y-1.5">
-              <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
+              <button data-action="kitapModalAcId" data-arg1="${escapeHtml(k.kitapId)}"
                       class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-sm text-xs transition">
                 Sayfamı Güncelle / Bitirdim ✏️
               </button>
-              <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')"
+              <button data-action="ogrenciOkumayiBirak" data-arg1="${escapeHtml(k.kitapId)}" data-arg2="${escapeHtml(k.kitapAdi)}"
                       class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-[11px] transition border border-red-200/80">
                 ✖️ Okumayı Bırak / Yanlış Seçtim
               </button>
@@ -1942,7 +1954,7 @@
           `;
         } else {
           butonHtml = `
-            <button onclick="kitapModalAcId('${escapeHtml(k.kitapId)}')"
+            <button data-action="kitapModalAcId" data-arg1="${escapeHtml(k.kitapId)}"
                     class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl shadow-sm transition text-xs flex items-center justify-center gap-1.5 active:scale-95">
               <span>📖</span> Bu Kitabı Okuyorum / Okudum
             </button>
@@ -1963,6 +1975,7 @@
               </div>
               <h4 class="font-black text-slate-800 text-base leading-snug font-hand">${escapeHtml(k.kitapAdi)}</h4>
               <p class="text-xs text-slate-500 mt-1">${escapeHtml(k.yazar)} • <strong class="text-slate-700">${topSayfa} Sayfa</strong></p>
+              ${kitapKayitDurumuHtml(k.kitapId, tamamKayit ? (tamamKayit.durum === 'Onay Bekliyor' ? 'onayda' : '') : (devamKayit ? 'ulasdi' : ''))}
             </div>
           </div>
           <div class="p-4 pt-3 border-t border-slate-100">
@@ -1999,10 +2012,10 @@
 
         const geriAlButon = !onayliMi
           ? `<div class="flex flex-wrap items-center gap-1.5">
-               <button onclick="ogrenciKitabiGeriAl('${escapeHtml(k.kitapId)}')" class="text-xs font-bold text-slate-500 hover:text-amber-700 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-xl transition">
+               <button data-action="ogrenciKitabiGeriAl" data-arg1="${escapeHtml(k.kitapId)}" class="text-xs font-bold text-slate-500 hover:text-amber-700 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-xl transition">
                  ↩️ Okumaya Devam Et
                </button>
-               <button onclick="ogrenciOkumayiBirak('${escapeHtml(k.kitapId)}', '${escapeHtml(k.kitapAdi)}')" class="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition border border-red-200/80">
+               <button data-action="ogrenciOkumayiBirak" data-arg1="${escapeHtml(k.kitapId)}" data-arg2="${escapeHtml(k.kitapAdi)}" class="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition border border-red-200/80">
                  ✖️ Tamamen İptal Et
                </button>
              </div>`
@@ -2041,7 +2054,7 @@
             ogrenciGirisYap(null);
             return;
           }
-        } catch (e) {}
+        } catch (e) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       const kayit = demoData.okunanlar.find(k => k.ogrenciId === aktifOgrenci.id && k.kitapId === kitapId && k.durum === 'Onay Bekliyor');
       if (kayit) {
@@ -2067,7 +2080,7 @@
             ogrenciGirisYap(null);
             return;
           }
-        } catch (e) {}
+        } catch (e) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
 
       const oncekiUzunluk = demoData.okunanlar.length;
@@ -2088,6 +2101,7 @@
 
     function ogrenciCikisYap() {
       aktifOgrenci = null;
+      sonKayitDurumlari.clear();
       sessionStorage.removeItem('kitapKurtlari_aktifOgrPin');
       document.getElementById('ogrenciPinInput').value = '';
       ogrenciPinKutulariGuncelle();
@@ -2234,13 +2248,20 @@
           btn.disabled = false;
           if (data) {
             toastGoster(data.message, data.success ? '✅' : '❌');
-            if (data.success && bitirildiMi) konfetiPatlat();
+            if (!data.success) return;
+            sonKayitDurumlari.set(String(kitapId), bitirildiMi ? 'onayda' : 'ulasdi');
+            if (bitirildiMi) konfetiPatlat();
             modalKapat('modalKitapBildir');
             ogrenciGirisYap(null);
             return;
           }
         } catch (err) {
-          toastGoster('Çevrimdışı olarak kaydediliyor.', '⚠️');
+          btn.disabled = false;
+          sonKayitDurumlari.set(String(kitapId), 'gonderilemedi');
+          modalKapat('modalKitapBildir');
+          ogrenciPaneliniGuncelle();
+          toastGoster('Gönderilemedi. Yeniden kaydetmeyi deneyin.', '⚠️');
+          return;
         }
       }
 
@@ -2307,7 +2328,6 @@
           const data = await apiIstegiGonder({ action: 'ogretmenGiris', pin: pin });
           if (data && data.success) {
             ogretmenSifre = pin;
-            sessionStorage.setItem('kitapKurtlari_aktifOgrtPin', pin);
             aktifOgretmen = data.ogretmen;
             document.getElementById('ekranOgrenciGiris').classList.add('hidden');
             document.getElementById('ekranOgretmenGiris').classList.add('hidden');
@@ -2320,14 +2340,14 @@
             return;
           }
         } catch (err) {
-          console.warn('Google Sheets bağlantısı henüz aktif değil, yerel veritabanı kullanılıyor:', err);
+          toastGoster('Bağlantı kurulamadı. Lütfen tekrar deneyin.', '⚠️');
+          return;
         }
       }
 
       const ogrt = demoData.ogretmenler.find(o => o.pin === pin);
       if (ogrt) {
         ogretmenSifre = pin;
-        sessionStorage.setItem('kitapKurtlari_aktifOgrtPin', pin);
         aktifOgretmen = ogrt;
         document.getElementById('ekranOgrenciGiris').classList.add('hidden');
         document.getElementById('ekranOgretmenGiris').classList.add('hidden');
@@ -2379,6 +2399,8 @@
           }
         } catch (err) {
           console.error(err);
+          toastGoster('Bağlantı kurulamadı.', '❌');
+          return;
         }
       }
 
@@ -2474,13 +2496,13 @@
               ${k.yorum ? `<p class="text-xs text-slate-700 bg-amber-50/70 px-3 py-1.5 rounded-xl border border-amber-200 italic">💬 Öğrenci Yorumu: “${escapeHtml(k.yorum)}”</p>` : '<p class="text-[11px] text-slate-400 italic">Öğrenci yorum yazmamış.</p>'}
             </div>
             <div class="flex flex-wrap items-center gap-2 self-end md:self-center">
-              <button onclick="kitapOnayla('${escapeHtml(k.islemId)}')" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center gap-1">
+              <button data-action="kitapOnayla" data-arg1="${escapeHtml(k.islemId)}" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center gap-1">
                 <span>✅</span> Onayla
               </button>
-              <button onclick="kitapIadeModalAc('${escapeHtml(k.islemId)}')" class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold rounded-xl text-xs transition flex items-center gap-1">
+              <button data-action="kitapIadeModalAc" data-arg1="${escapeHtml(k.islemId)}" class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold rounded-xl text-xs transition flex items-center gap-1">
                 <span>🔄</span> Not Yazıp İade Et
               </button>
-              <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-xs transition">
+              <button data-action="kitapSil" data-arg1="${escapeHtml(k.islemId)}" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl text-xs transition">
                 🗑️ Sil
               </button>
             </div>
@@ -2525,7 +2547,7 @@
               </div>
             </div>
             <div class="flex justify-end pt-2 border-t border-slate-100">
-              <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition">
+              <button data-action="kitapSil" data-arg1="${escapeHtml(k.islemId)}" class="text-[11px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition">
                 🗑️ Okumayı İptal Et / Sil
               </button>
             </div>
@@ -2558,7 +2580,7 @@
               ${k.yorum ? `<p class="text-xs text-slate-600 italic mt-1">“${escapeHtml(k.yorum)}”</p>` : ''}
             </div>
             <div class="flex items-center gap-2 self-end sm:self-center">
-              <button onclick="kitapOnayGeriAl('${escapeHtml(k.islemId)}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+              <button data-action="kitapOnayGeriAl" data-arg1="${escapeHtml(k.islemId)}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
                 ↩️ Onayı Geri Al
               </button>
             </div>
@@ -2592,10 +2614,10 @@
             <p class="text-xs text-slate-500">${escapeHtml(k.yazar)} • ${Number(k.sayfaSayisi) || 0} Sayfa</p>
           </div>
           <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
-            <button onclick="kitapDuzenleModalAc('${escapeHtml(k.kitapId)}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
+            <button data-action="kitapDuzenleModalAc" data-arg1="${escapeHtml(k.kitapId)}" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
               ✏️ Düzenle / Tarih
             </button>
-            <button onclick="havuzdanKitapSil('${escapeHtml(k.kitapId)}')" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
+            <button data-action="havuzdanKitapSil" data-arg1="${escapeHtml(k.kitapId)}" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
               🗑️ Sil
             </button>
           </div>
@@ -2606,6 +2628,8 @@
       // 5. Öğrenci Listesi (İsme Tıklayınca Alta Açılır Okuma Detay Penceresi + Düzenle & Sil)
       const tbody = document.getElementById('ogretmenOgrenciTabloBody');
       tbody.innerHTML = '';
+      const kartListesi = document.getElementById('ogretmenOgrenciKartlari');
+      kartListesi.innerHTML = '';
       if (!window.acikOgrenciDetaylari) window.acikOgrenciDetaylari = new Set();
 
       ogretmenOgrenciCache.forEach(ogr => {
@@ -2629,7 +2653,7 @@
         tr.innerHTML = `
           <td class="py-3 px-4 font-mono font-bold">${escapeHtml(ogr.numara || '-')}</td>
           <td class="py-3 px-4">
-            <button type="button" onclick="ogrenciDetayAcKapat('${escapeHtml(ogr.id)}')"
+            <button type="button" data-action="ogrenciDetayAcKapat" data-arg1="${escapeHtml(ogr.id)}"
                     class="text-left group flex flex-wrap items-center gap-2 font-black text-slate-800 hover:text-indigo-700 transition focus:outline-none"
                     title="Öğrencinin okuduğu kitapların listesini ve kaldığı yeri görmek için tıklayın">
               <span id="ogrDetayOk_${escapeHtml(ogr.id)}" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${acikMi ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'} group-hover:bg-indigo-600 group-hover:text-white text-xs font-black transition-transform duration-200" style="transform: ${acikMi ? 'rotate(180deg)' : 'rotate(0deg)'}">▾</span>
@@ -2645,7 +2669,7 @@
             </span>
           </td>
           <td class="py-3 px-4">
-            <button type="button" onclick="tabloPinGosterGizle(this, '${escapeHtml(pinStr)}')" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
+            <button type="button" data-action="tabloPinGosterGizle" data-arg1="${escapeHtml(pinStr)}" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
               <span class="pin-deger">${gizliPin}</span>
               <span class="pin-ikon text-[11px] opacity-70">👁️</span>
             </button>
@@ -2653,13 +2677,13 @@
           <td class="py-3 px-4 font-extrabold text-emerald-700">${Number(ogr.okunanKitap) || 0} Kitap</td>
           <td class="py-3 px-4 text-slate-500 font-medium">${Number(ogr.toplamSayfa) || 0} Sayfa</td>
           <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-            <button onclick="ogrenciDetayAcKapat('${escapeHtml(ogr.id)}')" class="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1.5 rounded-xl border transition ${acikMi ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'}">
+            <button data-action="ogrenciDetayAcKapat" data-arg1="${escapeHtml(ogr.id)}" class="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1.5 rounded-xl border transition ${acikMi ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'}">
               <span>📚</span> Okudukları
             </button>
-            <button onclick="ogrenciDuzenleModalAc('${escapeHtml(ogr.id)}')" class="text-slate-600 hover:text-slate-900 text-xs font-bold px-2 py-1 hover:bg-slate-100 rounded-xl transition">
+            <button data-action="ogrenciDuzenleModalAc" data-arg1="${escapeHtml(ogr.id)}" class="text-slate-600 hover:text-slate-900 text-xs font-bold px-2 py-1 hover:bg-slate-100 rounded-xl transition">
               ✏️ Düzenle
             </button>
-            <button onclick="ogrenciSil('${escapeHtml(ogr.id)}')" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded-xl transition">
+            <button data-action="ogrenciSil" data-arg1="${escapeHtml(ogr.id)}" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded-xl transition">
               🗑️ Sil
             </button>
           </td>
@@ -2687,7 +2711,7 @@
                   </div>
                   ${k.ogretmenNotu ? `<p class="text-[11px] text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg">📌 İade Notunuz: ${escapeHtml(k.ogretmenNotu)}</p>` : ''}
                   <div class="flex justify-end pt-1">
-                    <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition">
+                    <button data-action="kitapSil" data-arg1="${escapeHtml(k.islemId)}" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition">
                       🗑️ Okumayı Bıraktır / Kaydı Sil
                     </button>
                   </div>
@@ -2705,11 +2729,11 @@
                 ? `<span class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full">✅ Onaylandı</span>`
                 : `<span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full">⏳ Onay Bekliyor</span>`;
               const aksiyonlar = onayliMi
-                ? `<button onclick="kitapOnayGeriAl('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition">↩️ Onayı Geri Al</button>
-                   <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition">🗑️ Sil</button>`
-                : `<button onclick="kitapOnayla('${escapeHtml(k.islemId)}')" class="text-[11px] font-extrabold text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1 rounded-lg transition">✅ Onayla</button>
-                   <button onclick="kitapIadeModalAc('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition">🔄 İade Et</button>
-                   <button onclick="kitapSil('${escapeHtml(k.islemId)}')" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition">🗑️ Sil</button>`;
+                ? `<button data-action="kitapOnayGeriAl" data-arg1="${escapeHtml(k.islemId)}" class="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition">↩️ Onayı Geri Al</button>
+                   <button data-action="kitapSil" data-arg1="${escapeHtml(k.islemId)}" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition">🗑️ Sil</button>`
+                : `<button data-action="kitapOnayla" data-arg1="${escapeHtml(k.islemId)}" class="text-[11px] font-extrabold text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1 rounded-lg transition">✅ Onayla</button>
+                   <button data-action="kitapIadeModalAc" data-arg1="${escapeHtml(k.islemId)}" class="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition">🔄 İade Et</button>
+                   <button data-action="kitapSil" data-arg1="${escapeHtml(k.islemId)}" class="text-[11px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition">🗑️ Sil</button>`;
 
               return `
                 <div class="bg-white p-3.5 rounded-xl border ${onayliMi ? 'border-emerald-200' : 'border-amber-200'} shadow-sm space-y-1.5">
@@ -2741,7 +2765,7 @@
                   </h4>
                   <p class="text-[11px] text-slate-500 mt-0.5">Öğrencinin yanlış işaretlediği veya bıraktığı kitapları buradan doğrudan <strong>🗑️ Sil</strong> ile kaldırabilirsiniz.</p>
                 </div>
-                <button type="button" onclick="ogrenciDetayAcKapat('${escapeHtml(ogr.id)}')" class="text-xs font-bold text-slate-500 hover:text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
+                <button type="button" data-action="ogrenciDetayAcKapat" data-arg1="${escapeHtml(ogr.id)}" class="text-xs font-bold text-slate-500 hover:text-slate-800 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
                   ✕ Kapat
                 </button>
               </div>
@@ -2763,6 +2787,31 @@
           </td>
         `;
         tbody.appendChild(trDetay);
+
+        const kart = document.createElement('article');
+        kart.className = 'bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3';
+        kart.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-base">${escapeHtml(ogr.avatar || '🦊')} ${escapeHtml(ogr.adSoyad)}</h3>
+              <p class="text-sm text-slate-600">No ${escapeHtml(ogr.numara || '-')} · ${escapeHtml(ogr.sinif || (aktifOgretmen ? aktifOgretmen.sinif : '-'))}</p>
+            </div>
+            <span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800">${Number(ogr.okunanKitap) || 0} kitap</span>
+          </div>
+          <p class="text-sm text-slate-700">📖 ${ogrDevam.length} okunuyor · ⏳ ${ogrBekleyen.length} onayda · ${Number(ogr.toplamSayfa) || 0} sayfa</p>
+          <details class="rounded-xl bg-slate-50 px-3 py-2">
+            <summary class="cursor-pointer font-bold text-sm text-indigo-800">Okuma ayrıntıları</summary>
+            <div class="pt-2 space-y-1 text-sm text-slate-700">
+              ${ogrDevam.map(k => `<p>📖 ${escapeHtml(k.kitapAdi)} · ${Number(k.kaldigiSayfa) || 0}/${Number(k.toplamSayfa) || 0} sayfa</p>`).join('') || '<p>Devam eden kitap yok.</p>'}
+              ${ogrGecmis.map(k => `<p>${k.durum === 'Onaylandı' ? '✅' : '⏳'} ${escapeHtml(k.kitapAdi)}</p>`).join('')}
+            </div>
+          </details>
+          <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            <button type="button" data-action="tabloPinGosterGizle" data-arg1="${escapeHtml(pinStr)}" class="rounded-xl bg-slate-100 px-3 py-2 text-sm font-bold text-slate-800" aria-label="${escapeHtml(ogr.adSoyad)} PIN kodunu göster veya gizle"><span class="pin-deger">${gizliPin}</span> <span class="pin-ikon">👁️</span></button>
+            <button type="button" data-action="ogrenciDuzenleModalAc" data-arg1="${escapeHtml(ogr.id)}" class="rounded-xl bg-indigo-50 px-3 py-2 text-sm font-bold text-indigo-800">✏️ Düzenle</button>
+            <button type="button" data-action="ogrenciSil" data-arg1="${escapeHtml(ogr.id)}" class="rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-700">🗑️ Sil</button>
+          </div>`;
+        kartListesi.appendChild(kart);
       });
     }
 
@@ -2801,7 +2850,7 @@
             ogretmenVerileriniYukle();
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       const item = demoData.okunanlar.find(k => k.islemId === islemId);
       if (item) {
@@ -2837,7 +2886,7 @@
             ogretmenVerileriniYukle();
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       const item = demoData.okunanlar.find(k => k.islemId === islemId);
       if (item) {
@@ -2859,7 +2908,7 @@
             ogretmenVerileriniYukle();
             return;
           }
-        } catch (err) {}
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       const item = demoData.okunanlar.find(k => k.islemId === islemId);
       if (item) {
@@ -2880,7 +2929,7 @@
             ogretmenVerileriniYukle();
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       demoData.okunanlar = demoData.okunanlar.filter(k => k.islemId !== islemId);
       demoKaydet();
@@ -2987,7 +3036,7 @@
             }
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
 
       kitaplar.forEach((k, idx) => {
@@ -3040,7 +3089,7 @@
             }
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
 
       if (duzenlenenKitapId) {
@@ -3079,7 +3128,7 @@
             ogretmenVerileriniYukle();
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       demoData.havuz = demoData.havuz.filter(k => k.kitapId !== kitapId);
       demoKaydet();
@@ -3158,7 +3207,7 @@
             }
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
 
       // Çevrimdışı benzersiz PIN kontrolü
@@ -3230,7 +3279,7 @@
             }
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
 
       const mevcutPinler = new Set(demoData.ogrenciler.map(o => o.pin));
@@ -3267,7 +3316,7 @@
             ogretmenVerileriniYukle();
             return;
           }
-        } catch (err) { toastGoster('Hata oluştu.', '❌'); }
+        } catch (err) { toastGoster('Bağlantı kurulamadı; işlem kaydedilmedi.', '❌'); return; }
       }
       demoData.ogrenciler = demoData.ogrenciler.filter(o => o.id !== ogrenciId);
       demoKaydet();

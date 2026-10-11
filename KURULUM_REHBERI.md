@@ -1,6 +1,6 @@
 # 📚 3. Sınıf Kitap Kurtları - Kolay Kurulum Rehberi
 
-Bu sistem; **Google E-Tablolar (Sheets)** altyapısını ücretsiz veritabanı olarak kullanan, öğretmenin belirlediği **Dijital Kitap Havuzu** üzerinden öğrencilerin tek tıkla okuma bildirimi yaptığı, veliler için sıfır sürtünmeli (yalnızca 4 haneli PIN ile girilen) ve akran zorbalığını engelleyen modern bir sınıf okuma takip web uygulamasıdır.
+Bu sistem; **Google E-Tablolar (Sheets)** altyapısını ücretsiz veritabanı olarak kullanan, öğretmenin belirlediği **Dijital Kitap Havuzu** üzerinden öğrencilerin okuma bildirimi yaptığı bir sınıf okuma takip web uygulamasıdır. Öğretmen PIN'i 4, öğrenci PIN'i 6 hanelidir.
 
 ---
 
@@ -31,7 +31,7 @@ Bu sistem; **Google E-Tablolar (Sheets)** altyapısını ücretsiz veritabanı o
    * **`KitapHavuzu`:** Öğretmenin belirlediği kitap listesi (Örn: Küçük Prens, Şeker Portakalı, Charlie'nin Çikolata Fabrikası, Matilda vb.).
    * **`Ogrenciler`:** Öğrenci isimleri, numaraları, bağlı oldukları sınıf ve 4 haneli giriş PIN'leri.
    * **`OkunanKitaplar`:** Öğrencilerin bildirdiği ve sınıf öğretmeninin onayladığı okuma hareketleri.
-   * **`Ayarlar`:** Admin kullanıcı adı (`admin`), Admin şifresi (`admin123`) ve aylık kulüp hedef barajı (`3`).
+   * **`Ayarlar`:** Admin kullanıcı adı (`admin`), ilk kurulumda rastgele üretilen admin şifresi ve aylık kulüp hedef barajı (`3`). İlk şifreyi bu sayfadaki `AdminSifre` satırından alın, girişten sonra değiştirin. Önceki sürümdeki varsayılan `admin123` şifresi de bu kodun ilk çalışmasında yenilenir.
 
 ---
 
@@ -58,12 +58,12 @@ Bu sistem; **Google E-Tablolar (Sheets)** altyapısını ücretsiz veritabanı o
 ## 🎯 Yeni Sistem Nasıl İşliyor?
 
 1. **🛡️ Sistem Yöneticisi (Admin):**
-   * Üst menüdeki **"🛡️ Admin"** sekmesine tıklar; kullanıcı adı (`admin`) ve şifresi (`admin123`) ile giriş yapar.
+   * Üst menüdeki **"🛡️ Admin"** sekmesine tıklar; kullanıcı adı (`admin`) ve `Ayarlar` sayfasında üretilen ilk şifreyle giriş yapar.
    * Sisteme yeni **Öğretmen Adı Soyadı**, **Bağlı Olduğu Sınıf** (örn: `3-A Sınıfı`) ve **Öğretmen PIN Kodu** (örn: `1234`) tanımlar.
 2. **👩‍🏫 Öğretmen:**
    * Üst menüdeki **"👩‍🏫 Öğretmen"** sekmesine tıklar ve Admin'in kendisine verdiği **PIN Kodu** ile giriş yapar.
    * Sadece kendi sınıfındaki öğrencileri, okuma ilerlemelerini ve onay bekleyen kitapları görür; sınıfına yeni öğrenci ve kitap ekleyebilir.
    * Kütüphaneye kitap eklerken **"Kütüphanede Aktif Olacağı Tarih"** seçebilir; ileri tarihli eklenen kitaplar öğretmen panelinde `⏳ ... tarihinde açılacak` rozetiyle görünür ve öğrencilere yalnızca o tarih geldiğinde açılır.
 3. **👧 Öğrenci & Veli:**
-   * 4 haneli öğrenci PIN kodu ile girer (Örn: `1234`).
+   * 6 haneli öğrenci PIN kodu ile girer (Örn: `482915`).
    * Kendi sınıfının aktif tarihi gelmiş kitaplarını görür; okuduğu kitabın kaldığı sayfasını veya bitirdiğini tek tıkla bildirir.
