@@ -395,7 +395,7 @@
         </div>
         <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full min-w-[850px] text-left border-collapse">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-xs font-extrabold text-slate-500 uppercase">
                   <th class="py-3.5 px-4">No</th>
@@ -584,15 +584,16 @@
 
         <!-- Sağ: Tanımlı Öğretmenler ve Sınıf İstatistik Tablosu -->
         <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div class="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-lg font-extrabold text-slate-800">Tanımlı Öğretmenler ve Sınıfları</h3>
               <p class="text-xs text-slate-500">Her öğretmen kendi PIN kodu ile yalnızca kendi sınıfını yönetir.</p>
             </div>
-            <span id="badgeAdminOgrtSayi" class="bg-indigo-100 text-indigo-800 text-xs font-extrabold px-3 py-1 rounded-full">0 Öğretmen</span>
+            <span id="badgeAdminOgrtSayi" class="bg-indigo-100 text-indigo-800 text-xs font-extrabold px-3 py-1 rounded-full whitespace-nowrap">0 Öğretmen</span>
           </div>
-          <div class="overflow-x-auto flex-1">
-            <table class="w-full text-left border-collapse">
+          <div id="adminOgretmenKartListesi" class="md:hidden divide-y divide-slate-100"></div>
+          <div class="hidden md:block overflow-x-auto flex-1">
+            <table class="w-full min-w-[850px] text-left border-collapse">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-xs font-extrabold text-slate-500 uppercase">
                   <th class="py-3.5 px-4">Öğretmen Adı</th>
@@ -1384,8 +1385,10 @@
       if (aktifAdmin) document.getElementById('inpYeniAdminKullanici').value = aktifAdmin.kullaniciAdi;
 
       const tbody = document.getElementById('adminOgretmenTabloBody');
+      const kartListesi = document.getElementById('adminOgretmenKartListesi');
       document.getElementById('badgeAdminOgrtSayi').innerText = `${ogretmenler.length} Öğretmen`;
       tbody.innerHTML = '';
+      kartListesi.innerHTML = '';
 
       if (ogretmenler.length === 0) {
         tbody.innerHTML = `
@@ -1395,6 +1398,7 @@
             </td>
           </tr>
         `;
+        kartListesi.innerHTML = '<p class="p-5 text-center text-sm font-bold text-slate-400">Henüz tanımlı öğretmen bulunmuyor. Yukarıdaki formdan ekleyebilirsiniz.</p>';
         return;
       }
 
@@ -1406,7 +1410,7 @@
         tr.innerHTML = `
           <td class="py-3.5 px-4 font-black text-slate-800">👩‍🏫 ${escapeHtml(ogrt.adSoyad)}</td>
           <td class="py-3.5 px-4">
-            <span class="bg-indigo-50 text-indigo-700 font-extrabold px-2.5 py-1 rounded-full text-xs border border-indigo-200">
+            <span class="inline-flex whitespace-nowrap bg-indigo-50 text-indigo-700 font-extrabold px-2.5 py-1 rounded-full text-xs border border-indigo-200">
               ${escapeHtml(ogrt.sinif)}
             </span>
           </td>
@@ -1416,10 +1420,10 @@
               <span class="pin-ikon text-[11px] opacity-70">👁️</span>
             </button>
           </td>
-          <td class="py-3.5 px-4 text-xs font-bold text-slate-600">
+          <td class="py-3.5 px-4 text-xs font-bold text-slate-600 whitespace-nowrap">
             ${Number(ogrt.ogrenciSayisi) || 0} Öğrenci • <span class="text-emerald-700">${Number(ogrt.onayliKitapSayisi) || 0} Kitap</span> • ${Number(ogrt.toplamSayfa) || 0} Sayfa
           </td>
-          <td class="py-3.5 px-4 text-right space-x-1">
+          <td class="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
             <button data-action="adminOgretmenDuzenleBaslat" data-arg1="${escapeHtml(ogrt.id)}" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
               ✏️ Düzenle
             </button>
@@ -1429,6 +1433,20 @@
           </td>
         `;
         tbody.appendChild(tr);
+        const kart = document.createElement('article');
+        kart.className = 'p-4 space-y-3';
+        kart.innerHTML = `
+          <div class="flex flex-wrap items-center gap-2">
+            <h4 class="font-black text-slate-800 break-words min-w-0">👩‍🏫 ${escapeHtml(ogrt.adSoyad)}</h4>
+            <span class="inline-flex whitespace-nowrap bg-indigo-50 text-indigo-700 font-extrabold px-2.5 py-1 rounded-full text-xs border border-indigo-200">${escapeHtml(ogrt.sinif)}</span>
+          </div>
+          <p class="text-xs font-bold text-slate-600">${Number(ogrt.ogrenciSayisi) || 0} Öğrenci · ${Number(ogrt.onayliKitapSayisi) || 0} Kitap · ${Number(ogrt.toplamSayfa) || 0} Sayfa</p>
+          <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            <button type="button" data-action="tabloPinGosterGizle" data-arg1="${escapeHtml(pinStr)}" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800" aria-label="${escapeHtml(ogrt.adSoyad)} PIN kodunu göster veya gizle"><span class="pin-deger">${gizliPin}</span><span class="pin-ikon">👁️</span></button>
+            <button type="button" data-action="adminOgretmenDuzenleBaslat" data-arg1="${escapeHtml(ogrt.id)}" class="rounded-xl bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800">✏️ Düzenle</button>
+            <button type="button" data-action="adminOgretmenSil" data-arg1="${escapeHtml(ogrt.id)}" class="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700">🗑️ Sil</button>
+          </div>`;
+        kartListesi.appendChild(kart);
       });
     }
 
@@ -2664,7 +2682,7 @@
             </button>
           </td>
           <td class="py-3 px-4">
-            <span class="bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full text-xs">
+            <span class="inline-flex whitespace-nowrap bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full text-xs">
               ${escapeHtml(ogr.sinif || (aktifOgretmen ? aktifOgretmen.sinif : '-'))}
             </span>
           </td>
