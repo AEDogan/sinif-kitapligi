@@ -384,7 +384,9 @@ function apiIslemCalistir(params, ip) {
       };
     });
 
-    const sinifHavuzu = db.havuz.filter(k => !k.sinif || k.sinif === 'Ortak' || k.sinif === ogrt.sinif);
+    const sinifHavuzu = db.havuz
+      .filter(k => !k.sinif || k.sinif === 'Ortak' || k.sinif === ogrt.sinif)
+      .map(k => ({ ...k, eklenmeTarihi: k.eklenmeTarihi || k.aktifTarih || bugun }));
 
     return {
       success: true,
@@ -455,7 +457,8 @@ function apiIslemCalistir(params, ip) {
       sayfaSayisi: sayfa,
       tur: tur,
       sinif: ogrt.sinif,
-      aktifTarih: aktifTarih
+      aktifTarih: aktifTarih,
+      eklenmeTarihi: bugun
     });
     dbKaydet(db);
     return {
@@ -489,7 +492,8 @@ function apiIslemCalistir(params, ip) {
         sayfaSayisi: sayfa,
         tur: tur,
         sinif: ogrt.sinif || 'Ortak',
-        aktifTarih: aktifTarih
+        aktifTarih: aktifTarih,
+        eklenmeTarihi: bugun
       });
       eklenen++;
     });

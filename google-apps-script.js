@@ -76,8 +76,8 @@ function ilkKurulum() {
   let havuzSayfa = ss.getSheetByName(TABLO_ISIMLERI.KITAP_HAVUZU);
   if (!havuzSayfa) {
     havuzSayfa = ss.insertSheet(TABLO_ISIMLERI.KITAP_HAVUZU);
-    havuzSayfa.appendRow(["KitapId", "KitapAdi", "Yazar", "SayfaSayisi", "Tur", "Durum", "Sinif", "AktifTarih"]);
-    havuzSayfa.getRange("A1:H1").setFontWeight("bold").setBackground("#fde68a");
+    havuzSayfa.appendRow(["KitapId", "KitapAdi", "Yazar", "SayfaSayisi", "Tur", "Durum", "Sinif", "AktifTarih", "EklenmeTarihi"]);
+    havuzSayfa.getRange("A1:I1").setFontWeight("bold").setBackground("#fde68a");
   }
 
   // 2. Ogrenciler Sayfası
@@ -1077,7 +1077,8 @@ function havuzaKitapEkle(ss, params) {
     guvenliHucreDegeri(tur),
     "Aktif",
     guvenliHucreDegeri(ogretmen.sinif || "Ortak"),
-    guvenliHucreDegeri(aktifTarih)
+    guvenliHucreDegeri(aktifTarih),
+    guvenliHucreDegeri(bugun)
   ]);
 
   const tarihMesaji = aktifTarih > bugun
@@ -1117,7 +1118,8 @@ function havuzTopluKitapEkle(ss, params) {
       guvenliHucreDegeri(tur),
       "Aktif",
       guvenliHucreDegeri(ogretmen.sinif || "Ortak"),
-      guvenliHucreDegeri(aktifTarih)
+      guvenliHucreDegeri(aktifTarih),
+      guvenliHucreDegeri(bugun)
     ]);
     eklenenSayi++;
   }
@@ -1409,6 +1411,16 @@ function getKitapHavuzu(ss, sinifFiltre, sadeceAktifTarihliler) {
         continue;
       }
 
+      let eklenmeTarihi = "";
+      if (data[i][8]) {
+        if (Object.prototype.toString.call(data[i][8]) === "[object Date]") {
+          eklenmeTarihi = Utilities.formatDate(data[i][8], "GMT+3", "yyyy-MM-dd");
+        } else {
+          eklenmeTarihi = String(data[i][8]).trim().slice(0, 10);
+        }
+      }
+      if (!eklenmeTarihi) eklenmeTarihi = aktifTarih || bugun;
+
       havuz.push({
         kitapId: String(data[i][0]),
         kitapAdi: String(data[i][1]),
@@ -1416,7 +1428,8 @@ function getKitapHavuzu(ss, sinifFiltre, sadeceAktifTarihliler) {
         sayfaSayisi: Math.max(1, Number(data[i][3]) || 1),
         tur: String(data[i][4] || "Genel"),
         sinif: kitapSinif,
-        aktifTarih: aktifTarih
+        aktifTarih: aktifTarih,
+        eklenmeTarihi: eklenmeTarihi
       });
     }
   }

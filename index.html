@@ -378,6 +378,65 @@
 
       <!-- Sekme 4: Kitap Havuzu Yönetimi (Düzenle & Tarih Güncelleme Dahil) -->
       <div id="tabOgretmenHavuz" class="hidden space-y-4">
+        <!-- Sıralama ve Arama Filtre Çubuğu -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <!-- Arama Kutusu -->
+            <div class="relative flex-1">
+              <input type="text" id="inpOgretmenHavuzAra" oninput="ogretmenHavuzFiltrele()"
+                     placeholder="🔍 Kitap adı veya yazar ara..."
+                     class="w-full pl-3.5 pr-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-indigo-500 focus:outline-none transition" />
+            </div>
+
+            <!-- Sıralama Seçimi (Sort Filter) -->
+            <div class="flex items-center gap-2">
+              <label for="selOgretmenHavuzSira" class="text-xs font-bold text-slate-500 whitespace-nowrap flex items-center gap-1">
+                <span>🔃 Sırala:</span>
+              </label>
+              <select id="selOgretmenHavuzSira" onchange="ogretmenHavuzFiltrele()"
+                      class="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-bold text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none transition cursor-pointer">
+                <option value="alfabetik-az">🔤 Alfabetik (A → Z)</option>
+                <option value="alfabetik-za">🔤 Alfabetik (Z → A)</option>
+                <option value="sayfa-azalan">📄 Sayfa Sayısına Göre (Çoktan Aza)</option>
+                <option value="sayfa-artan">📄 Sayfa Sayısına Göre (Azdan Çoka)</option>
+                <option value="eklenme-yeni" selected>📅 Eklenme Tarihine Göre (En Yeni)</option>
+                <option value="eklenme-eski">📅 Eklenme Tarihine Göre (En Eski)</option>
+                <option value="okunma-yeni">📖 Okunma Tarihine Göre (En Son Okunanlar)</option>
+                <option value="okunma-eski">📖 Okunma Tarihine Göre (En Eski / Okunmayanlar)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Hızlı Durum Filtre Butonları & Sayaç Rozeti -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <div class="flex flex-wrap items-center gap-1.5" id="ogretmenHavuzFiltreBtnGrup">
+              <button type="button" onclick="ogretmenHavuzDurumSec('tumu')" id="btnOgrHavuzTumu"
+                      class="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition shadow-xs">
+                Tümü (<span id="sayacOgrHavuzTumu">0</span>)
+              </button>
+              <button type="button" onclick="ogretmenHavuzDurumSec('aktif')" id="btnOgrHavuzAktif"
+                      class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                ✅ Aktif (<span id="sayacOgrHavuzAktif">0</span>)
+              </button>
+              <button type="button" onclick="ogretmenHavuzDurumSec('ileri')" id="btnOgrHavuzIleri"
+                      class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                ⏳ İleri Tarihli (<span id="sayacOgrHavuzIleri">0</span>)
+              </button>
+              <button type="button" onclick="ogretmenHavuzDurumSec('okunan')" id="btnOgrHavuzOkunan"
+                      class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                📖 Okunanlar (<span id="sayacOgrHavuzOkunan">0</span>)
+              </button>
+              <button type="button" onclick="ogretmenHavuzDurumSec('okunmayan')" id="btnOgrHavuzOkunmayan"
+                      class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                💤 Henüz Okunmayanlar (<span id="sayacOgrHavuzOkunmayan">0</span>)
+              </button>
+            </div>
+            <div class="text-[11px] font-bold text-slate-400">
+              Gösterilen: <span id="sayacOgrHavuzGosterilen" class="text-indigo-600 font-black">0</span> kitap
+            </div>
+          </div>
+        </div>
+
         <div id="ogretmenHavuzListesi" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </div>
 
@@ -934,6 +993,8 @@
     let aktifAdmin = null;
     let genelHavuz = [];
     let ogretmenHavuzCache = [];
+    let ogretmenTumOkunanlarCache = [];
+    let aktifOgretmenHavuzDurum = 'tumu';
     let ogretmenOgrenciCache = [];
     let adminOgretmenCache = [];
     let seciliMod = 'devam';
@@ -954,6 +1015,38 @@
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
+    }
+
+    function parseTarihToTimestamp(tarihStr) {
+      if (!tarihStr) return 0;
+      if (tarihStr instanceof Date) return tarihStr.getTime();
+      if (typeof tarihStr === 'number') return tarihStr;
+      const str = String(tarihStr).trim();
+      if (!str) return 0;
+
+      // DD.MM.YYYY HH:mm veya DD.MM.YYYY
+      const trMatch = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+      if (trMatch) {
+        const day = parseInt(trMatch[1], 10);
+        const month = parseInt(trMatch[2], 10) - 1;
+        const year = parseInt(trMatch[3], 10);
+        const hour = parseInt(trMatch[4] || '0', 10);
+        const minute = parseInt(trMatch[5] || '0', 10);
+        const second = parseInt(trMatch[6] || '0', 10);
+        return new Date(year, month, day, hour, minute, second).getTime();
+      }
+
+      // YYYY-MM-DD
+      const isoMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (isoMatch) {
+        const year = parseInt(isoMatch[1], 10);
+        const month = parseInt(isoMatch[2], 10) - 1;
+        const day = parseInt(isoMatch[3], 10);
+        return new Date(year, month, day).getTime();
+      }
+
+      const parsed = Date.parse(str);
+      return !isNaN(parsed) ? parsed : 0;
     }
 
     function tarihGorunurFormat(tarihStr) {
@@ -2480,6 +2573,11 @@
 
       ogretmenHavuzCache = data.havuz || [];
       ogretmenOgrenciCache = data.ogrenciler || [];
+      ogretmenTumOkunanlarCache = [
+        ...(data.bekleyenler || []),
+        ...(data.devamEdenler || []),
+        ...(data.onaylananlar || [])
+      ];
 
       // 1. Bekleyenler
       const bekleyenList = document.getElementById('bekleyenKitaplarListesi');
@@ -2607,41 +2705,8 @@
         });
       }
 
-      // 4. Havuz Listesi (Aktiflik Tarihi & Düzenle Butonu)
-      const havuzContainer = document.getElementById('ogretmenHavuzListesi');
-      havuzContainer.innerHTML = '';
-      const bugun = bugunTarihFormatli();
-
-      ogretmenHavuzCache.forEach(k => {
-        const kitapTarih = k.aktifTarih ? String(k.aktifTarih).slice(0, 10) : '';
-        const ileriTarihliMi = kitapTarih && kitapTarih > bugun;
-
-        const tarihRozeti = ileriTarihliMi
-          ? `<span class="inline-flex items-center gap-1 text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full border border-amber-300">⏳ ${escapeHtml(tarihGorunurFormat(kitapTarih))} tarihinde açılacak</span>`
-          : `<span class="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full">✅ Öğrencilere Aktif</span>`;
-
-        const item = document.createElement('div');
-        item.className = `bg-white p-4 rounded-2xl border ${ileriTarihliMi ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'} flex flex-col justify-between shadow-sm gap-3`;
-        item.innerHTML = `
-          <div class="space-y-1">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded">${escapeHtml(k.tur || 'Genel')}</span>
-              ${tarihRozeti}
-            </div>
-            <h5 class="font-black text-slate-800 text-sm">${escapeHtml(k.kitapAdi)}</h5>
-            <p class="text-xs text-slate-500">${escapeHtml(k.yazar)} • ${Number(k.sayfaSayisi) || 0} Sayfa</p>
-          </div>
-          <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
-            <button data-action="kitapDuzenleModalAc" data-arg1="${escapeHtml(k.kitapId)}" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
-              ✏️ Düzenle / Tarih
-            </button>
-            <button data-action="havuzdanKitapSil" data-arg1="${escapeHtml(k.kitapId)}" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
-              🗑️ Sil
-            </button>
-          </div>
-        `;
-        havuzContainer.appendChild(item);
-      });
+      // 4. Havuz Listesi (Sıralama ve Filtreleme Destekli)
+      ogretmenHavuzFiltrele();
 
       // 5. Öğrenci Listesi (İsme Tıklayınca Alta Açılır Okuma Detay Penceresi + Düzenle & Sil)
       const tbody = document.getElementById('ogretmenOgrenciTabloBody');
@@ -2832,6 +2897,240 @@
         kartListesi.appendChild(kart);
       });
     }
+
+    function ogretmenHavuzDurumSec(durum) {
+      aktifOgretmenHavuzDurum = durum || 'tumu';
+      const butonlar = [
+        { id: 'btnOgrHavuzTumu', key: 'tumu' },
+        { id: 'btnOgrHavuzAktif', key: 'aktif' },
+        { id: 'btnOgrHavuzIleri', key: 'ileri' },
+        { id: 'btnOgrHavuzOkunan', key: 'okunan' },
+        { id: 'btnOgrHavuzOkunmayan', key: 'okunmayan' }
+      ];
+      butonlar.forEach(b => {
+        const el = document.getElementById(b.id);
+        if (!el) return;
+        if (b.key === aktifOgretmenHavuzDurum) {
+          el.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white transition shadow-xs';
+        } else {
+          el.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+        }
+      });
+      ogretmenHavuzFiltrele();
+    }
+
+    function ogretmenHavuzFiltrele() {
+      const havuzContainer = document.getElementById('ogretmenHavuzListesi');
+      if (!havuzContainer) return;
+      havuzContainer.innerHTML = '';
+
+      const bugun = bugunTarihFormatli();
+      const aramaEl = document.getElementById('inpOgretmenHavuzAra');
+      const aramaMetni = (aramaEl ? aramaEl.value : '').toLowerCase().trim();
+      const siraEl = document.getElementById('selOgretmenHavuzSira');
+      const siraKriteri = siraEl ? siraEl.value : 'eklenme-yeni';
+
+      // Okuma verileri haritası ve sayaçlar
+      let sayacTumu = 0;
+      let sayacAktif = 0;
+      let sayacIleri = 0;
+      let sayacOkunan = 0;
+      let sayacOkunmayan = 0;
+
+      const zenginKitaplar = (ogretmenHavuzCache || []).map((k, index) => {
+        const kitapTarih = k.aktifTarih ? String(k.aktifTarih).slice(0, 10) : '';
+        const ileriTarihliMi = Boolean(kitapTarih && kitapTarih > bugun);
+
+        const kIdStr = String(k.kitapId || '').trim();
+        const kAdNorm = String(k.kitapAdi || '').trim().toLowerCase();
+
+        const okumalar = (ogretmenTumOkunanlarCache || []).filter(r => {
+          if (kIdStr && r.kitapId && String(r.kitapId).trim() === kIdStr) return true;
+          if (kAdNorm && r.kitapAdi && String(r.kitapAdi).trim().toLowerCase() === kAdNorm) return true;
+          return false;
+        });
+
+        const okumaSayisi = okumalar.length;
+        let sonOkunmaTs = 0;
+        let sonOkunmaStr = '';
+        let sonOkuyanOgrenci = '';
+
+        okumalar.forEach(r => {
+          const ts = parseTarihToTimestamp(r.tarih);
+          if (ts > sonOkunmaTs) {
+            sonOkunmaTs = ts;
+            sonOkunmaStr = r.tarih || '';
+            sonOkuyanOgrenci = r.ogrenciAdi || '';
+          }
+        });
+
+        if (okumaSayisi > 0 && !sonOkunmaStr && okumalar[0].tarih) {
+          sonOkunmaStr = okumalar[0].tarih;
+          sonOkuyanOgrenci = okumalar[0].ogrenciAdi || '';
+        }
+
+        const eklenmeTarihStr = k.eklenmeTarihi || k.aktifTarih || '';
+        const eklenmeTs = parseTarihToTimestamp(eklenmeTarihStr);
+
+        sayacTumu++;
+        if (ileriTarihliMi) sayacIleri++;
+        else sayacAktif++;
+
+        if (okumaSayisi > 0) sayacOkunan++;
+        else sayacOkunmayan++;
+
+        return {
+          ...k,
+          _index: index,
+          _ileriTarihliMi: ileriTarihliMi,
+          _okumaSayisi: okumaSayisi,
+          _sonOkunmaTs: sonOkunmaTs,
+          _sonOkunmaStr: sonOkunmaStr,
+          _sonOkuyanOgrenci: sonOkuyanOgrenci,
+          _eklenmeTarihStr: eklenmeTarihStr,
+          _eklenmeTs: eklenmeTs
+        };
+      });
+
+      const setElText = (id, txt) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = txt;
+      };
+      setElText('sayacOgrHavuzTumu', sayacTumu);
+      setElText('sayacOgrHavuzAktif', sayacAktif);
+      setElText('sayacOgrHavuzIleri', sayacIleri);
+      setElText('sayacOgrHavuzOkunan', sayacOkunan);
+      setElText('sayacOgrHavuzOkunmayan', sayacOkunmayan);
+
+      const filtrelenmis = zenginKitaplar.filter(k => {
+        if (aramaMetni) {
+          const adUygun = String(k.kitapAdi || '').toLowerCase().includes(aramaMetni);
+          const yazarUygun = String(k.yazar || '').toLowerCase().includes(aramaMetni);
+          const turUygun = String(k.tur || '').toLowerCase().includes(aramaMetni);
+          if (!adUygun && !yazarUygun && !turUygun) return false;
+        }
+
+        if (aktifOgretmenHavuzDurum === 'aktif') return !k._ileriTarihliMi;
+        if (aktifOgretmenHavuzDurum === 'ileri') return k._ileriTarihliMi;
+        if (aktifOgretmenHavuzDurum === 'okunan') return k._okumaSayisi > 0;
+        if (aktifOgretmenHavuzDurum === 'okunmayan') return k._okumaSayisi === 0;
+        return true;
+      });
+
+      filtrelenmis.sort((a, b) => {
+        if (siraKriteri === 'alfabetik-az') {
+          return String(a.kitapAdi || '').localeCompare(String(b.kitapAdi || ''), 'tr', { sensitivity: 'base' });
+        }
+        if (siraKriteri === 'alfabetik-za') {
+          return String(b.kitapAdi || '').localeCompare(String(a.kitapAdi || ''), 'tr', { sensitivity: 'base' });
+        }
+        if (siraKriteri === 'sayfa-azalan') {
+          const sFark = (Number(b.sayfaSayisi) || 0) - (Number(a.sayfaSayisi) || 0);
+          if (sFark !== 0) return sFark;
+          return String(a.kitapAdi || '').localeCompare(String(b.kitapAdi || ''), 'tr', { sensitivity: 'base' });
+        }
+        if (siraKriteri === 'sayfa-artan') {
+          const sFark = (Number(a.sayfaSayisi) || 0) - (Number(b.sayfaSayisi) || 0);
+          if (sFark !== 0) return sFark;
+          return String(a.kitapAdi || '').localeCompare(String(b.kitapAdi || ''), 'tr', { sensitivity: 'base' });
+        }
+        if (siraKriteri === 'eklenme-yeni') {
+          if (b._eklenmeTs !== a._eklenmeTs) return (b._eklenmeTs || 0) - (a._eklenmeTs || 0);
+          return (b._index || 0) - (a._index || 0);
+        }
+        if (siraKriteri === 'eklenme-eski') {
+          if (a._eklenmeTs !== b._eklenmeTs) return (a._eklenmeTs || 0) - (b._eklenmeTs || 0);
+          return (a._index || 0) - (b._index || 0);
+        }
+        if (siraKriteri === 'okunma-yeni') {
+          if (a._sonOkunmaTs > 0 && b._sonOkunmaTs === 0) return -1;
+          if (a._sonOkunmaTs === 0 && b._sonOkunmaTs > 0) return 1;
+          if (a._sonOkunmaTs !== b._sonOkunmaTs) return (b._sonOkunmaTs || 0) - (a._sonOkunmaTs || 0);
+          return String(a.kitapAdi || '').localeCompare(String(b.kitapAdi || ''), 'tr', { sensitivity: 'base' });
+        }
+        if (siraKriteri === 'okunma-eski') {
+          if (a._sonOkunmaTs === 0 && b._sonOkunmaTs > 0) return -1;
+          if (a._sonOkunmaTs > 0 && b._sonOkunmaTs === 0) return 1;
+          if (a._sonOkunmaTs !== b._sonOkunmaTs) return (a._sonOkunmaTs || 0) - (b._sonOkunmaTs || 0);
+          return String(a.kitapAdi || '').localeCompare(String(b.kitapAdi || ''), 'tr', { sensitivity: 'base' });
+        }
+        return 0;
+      });
+
+      setElText('sayacOgrHavuzGosterilen', filtrelenmis.length);
+
+      if (filtrelenmis.length === 0) {
+        havuzContainer.innerHTML = `
+          <div class="col-span-full bg-white p-8 rounded-2xl text-center border-2 border-dashed border-slate-200">
+            <span class="text-3xl">📚</span>
+            <p class="font-bold text-slate-700 mt-2">Kriterlere uygun kitap bulunamadı.</p>
+            <p class="text-xs text-slate-400 mt-1">Arama kelimesini değiştirebilir veya kütüphaneye yeni kitap ekleyebilirsiniz.</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtrelenmis.forEach(k => {
+        const kitapTarih = k.aktifTarih ? String(k.aktifTarih).slice(0, 10) : '';
+        const tarihRozeti = k._ileriTarihliMi
+          ? `<span class="inline-flex items-center gap-1 text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full border border-amber-300">⏳ ${escapeHtml(tarihGorunurFormat(kitapTarih))} tarihinde açılacak</span>`
+          : `<span class="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full">✅ Öğrencilere Aktif</span>`;
+
+        const eklenmeMetni = k._eklenmeTarihStr ? tarihGorunurFormat(k._eklenmeTarihStr) : 'Belirtilmemiş';
+
+        let okunmaRozet = '';
+        if (k._okumaSayisi > 0) {
+          const sonTarihGosterim = k._sonOkunmaStr ? escapeHtml(k._sonOkunmaStr) : '';
+          const okuyanKullanici = k._sonOkuyanOgrenci ? ` (${escapeHtml(k._sonOkuyanOgrenci)})` : '';
+          okunmaRozet = `
+            <div class="flex items-center gap-1 text-[11px] text-indigo-700 font-semibold bg-indigo-50/70 border border-indigo-100 px-2 py-1 rounded-lg">
+              <span>📖</span>
+              <span><strong>${k._okumaSayisi}</strong> kez okundu · Son: ${sonTarihGosterim}${okuyanKullanici}</span>
+            </div>
+          `;
+        } else {
+          okunmaRozet = `
+            <div class="flex items-center gap-1 text-[11px] text-slate-400 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg font-medium">
+              <span>💤</span>
+              <span>Henüz hiç okunmadı</span>
+            </div>
+          `;
+        }
+
+        const item = document.createElement('div');
+        item.className = `bg-white p-4 rounded-2xl border ${k._ileriTarihliMi ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'} flex flex-col justify-between shadow-sm gap-3 hover:shadow-md transition`;
+        item.innerHTML = `
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded">${escapeHtml(k.tur || 'Genel')}</span>
+              ${tarihRozeti}
+            </div>
+            <h5 class="font-black text-slate-800 text-sm leading-snug">${escapeHtml(k.kitapAdi)}</h5>
+            <p class="text-xs text-slate-500 font-medium">${escapeHtml(k.yazar)} • <span class="font-bold text-slate-700">${Number(k.sayfaSayisi) || 0} Sayfa</span></p>
+
+            <div class="pt-1 space-y-1">
+              <div class="flex items-center gap-1 text-[11px] text-slate-500">
+                <span>📅</span>
+                <span>Eklenme: <strong class="text-slate-700">${escapeHtml(eklenmeMetni)}</strong></span>
+              </div>
+              ${okunmaRozet}
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
+            <button data-action="kitapDuzenleModalAc" data-arg1="${escapeHtml(k.kitapId)}" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
+              ✏️ Düzenle / Tarih
+            </button>
+            <button data-action="havuzdanKitapSil" data-arg1="${escapeHtml(k.kitapId)}" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
+              🗑️ Sil
+            </button>
+          </div>
+        `;
+        havuzContainer.appendChild(item);
+      });
+    }
+
+    window.ogretmenHavuzDurumSec = ogretmenHavuzDurumSec;
+    window.ogretmenHavuzFiltrele = ogretmenHavuzFiltrele;
 
     function ogrenciDetayAcKapat(ogrenciId) {
       if (!window.acikOgrenciDetaylari) window.acikOgrenciDetaylari = new Set();
@@ -3065,7 +3364,8 @@
           sayfaSayisi: k.sayfaSayisi,
           tur: k.tur,
           sinif: aktifOgretmen ? aktifOgretmen.sinif : 'Ortak',
-          aktifTarih: k.aktifTarih
+          aktifTarih: k.aktifTarih,
+          eklenmeTarihi: bugunTarihFormatli()
         });
       });
       demoKaydet();
@@ -3127,7 +3427,8 @@
           sayfaSayisi: sayfa,
           tur: tur,
           sinif: aktifOgretmen ? aktifOgretmen.sinif : 'Ortak',
-          aktifTarih: aktifTarih
+          aktifTarih: aktifTarih,
+          eklenmeTarihi: bugunTarihFormatli()
         });
       }
       demoKaydet();

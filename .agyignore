@@ -1,0 +1,30 @@
+﻿# Dependencies & Build Outputs
+node_modules/
+dist/
+dist-ssr/
+build/
+out/
+.git/
+
+# Package Lock & Logs
+package-lock.json
+*.log
+
+# Binaries & Media Assets
+*.exe
+*.dll
+*.ico
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.mp4
+*.zip
+*.tar.gz
+uploads/
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
