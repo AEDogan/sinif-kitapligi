@@ -395,11 +395,12 @@
               </label>
               <select id="selOgretmenHavuzSira" onchange="ogretmenHavuzFiltrele()"
                       class="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs sm:text-sm font-bold text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none transition cursor-pointer">
+                <option value="ogretmen-sira" selected>🔢 Kitap Sıralaması (1, 2, 3... Sürükle-Bırak)</option>
                 <option value="alfabetik-az">🔤 Alfabetik (A → Z)</option>
                 <option value="alfabetik-za">🔤 Alfabetik (Z → A)</option>
                 <option value="sayfa-azalan">📄 Sayfa Sayısına Göre (Çoktan Aza)</option>
                 <option value="sayfa-artan">📄 Sayfa Sayısına Göre (Azdan Çoka)</option>
-                <option value="eklenme-yeni" selected>📅 Eklenme Tarihine Göre (En Yeni)</option>
+                <option value="eklenme-yeni">📅 Eklenme Tarihine Göre (En Yeni)</option>
                 <option value="eklenme-eski">📅 Eklenme Tarihine Göre (En Eski)</option>
                 <option value="okunma-yeni">📖 Okunma Tarihine Göre (En Son Okunanlar)</option>
                 <option value="okunma-eski">📖 Okunma Tarihine Göre (En Eski / Okunmayanlar)</option>
@@ -435,6 +436,15 @@
               Gösterilen: <span id="sayacOgrHavuzGosterilen" class="text-indigo-600 font-black">0</span> kitap
             </div>
           </div>
+        </div>
+
+        <!-- Sürükle Bırak ve Sıralama Bilgilendirme Kutusu -->
+        <div id="ogretmenSiralamaBilgi" class="text-xs text-indigo-900 bg-indigo-50/80 border border-indigo-200 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🖐️</span>
+            <span><strong>Kartları Sürükle-Bırak:</strong> Kartların sağındaki <strong>⠿</strong> tutamacından sürükleyerek veya <strong>▲ / ▼</strong> butonlarıyla sırayı kolayca değiştirebilirsiniz.</span>
+          </div>
+          <span class="text-[11px] font-bold text-indigo-700 bg-white px-2.5 py-1 rounded-lg border border-indigo-100 shadow-2xs">✨ Sıralama Otomatik Kaydedilir</span>
         </div>
 
         <div id="ogretmenHavuzListesi" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
@@ -652,14 +662,14 @@
           </div>
           <div id="adminOgretmenKartListesi" class="md:hidden divide-y divide-slate-100"></div>
           <div class="hidden md:block overflow-x-auto flex-1">
-            <table class="w-full min-w-[850px] text-left border-collapse">
+            <table class="w-full min-w-[560px] text-left border-collapse">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-xs font-extrabold text-slate-500 uppercase">
-                  <th class="py-3.5 px-4">Öğretmen Adı</th>
-                  <th class="py-3.5 px-4">Sınıfı</th>
-                  <th class="py-3.5 px-4">Giriş PIN</th>
-                  <th class="py-3.5 px-4">Öğrenci / Kitap / Sayfa</th>
-                  <th class="py-3.5 px-4 text-right">İşlem</th>
+                  <th class="py-3 px-3">Öğretmen Adı</th>
+                  <th class="py-3 px-3">Sınıfı</th>
+                  <th class="py-3 px-3">Giriş PIN</th>
+                  <th class="py-3 px-3">Öğrenci / Kitap / Sayfa</th>
+                  <th class="py-3 px-3 text-right">İşlem</th>
                 </tr>
               </thead>
               <tbody id="adminOgretmenTabloBody" class="divide-y divide-slate-100 text-sm"></tbody>
@@ -1501,26 +1511,26 @@
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition';
         tr.innerHTML = `
-          <td class="py-3.5 px-4 font-black text-slate-800">👩‍🏫 ${escapeHtml(ogrt.adSoyad)}</td>
-          <td class="py-3.5 px-4">
-            <span class="inline-flex whitespace-nowrap bg-indigo-50 text-indigo-700 font-extrabold px-2.5 py-1 rounded-full text-xs border border-indigo-200">
+          <td class="py-3 px-3 font-black text-slate-800 text-xs sm:text-sm">👩‍🏫 ${escapeHtml(ogrt.adSoyad)}</td>
+          <td class="py-3 px-3">
+            <span class="inline-flex whitespace-nowrap bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded-full text-xs border border-indigo-200">
               ${escapeHtml(ogrt.sinif)}
             </span>
           </td>
-          <td class="py-3.5 px-4">
-            <button type="button" data-action="tabloPinGosterGizle" data-arg1="${escapeHtml(pinStr)}" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2.5 py-1 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
+          <td class="py-3 px-3">
+            <button type="button" data-action="tabloPinGosterGizle" data-arg1="${escapeHtml(pinStr)}" class="inline-flex items-center gap-1 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 font-mono font-black px-2 py-0.5 rounded-lg text-xs tracking-wider transition" title="PIN kodunu göster/gizle">
               <span class="pin-deger">${gizliPin}</span>
-              <span class="pin-ikon text-[11px] opacity-70">👁️</span>
+              <span class="pin-ikon text-[10px] opacity-70">👁️</span>
             </button>
           </td>
-          <td class="py-3.5 px-4 text-xs font-bold text-slate-600 whitespace-nowrap">
-            ${Number(ogrt.ogrenciSayisi) || 0} Öğrenci • <span class="text-emerald-700">${Number(ogrt.onayliKitapSayisi) || 0} Kitap</span> • ${Number(ogrt.toplamSayfa) || 0} Sayfa
+          <td class="py-3 px-3 text-xs font-semibold text-slate-600 whitespace-nowrap">
+            ${Number(ogrt.ogrenciSayisi) || 0} Öğr • <span class="text-emerald-700 font-bold">${Number(ogrt.onayliKitapSayisi) || 0} Kitap</span> • ${Number(ogrt.toplamSayfa) || 0} Sayfa
           </td>
-          <td class="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
-            <button data-action="adminOgretmenDuzenleBaslat" data-arg1="${escapeHtml(ogrt.id)}" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl transition">
+          <td class="py-3 px-3 text-right space-x-1 whitespace-nowrap">
+            <button data-action="adminOgretmenDuzenleBaslat" data-arg1="${escapeHtml(ogrt.id)}" class="text-indigo-600 hover:text-indigo-800 text-xs font-extrabold px-2 py-1 hover:bg-indigo-50 rounded-lg transition inline-flex items-center gap-0.5">
               ✏️ Düzenle
             </button>
-            <button data-action="adminOgretmenSil" data-arg1="${escapeHtml(ogrt.id)}" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2.5 py-1.5 hover:bg-red-50 rounded-xl transition">
+            <button data-action="adminOgretmenSil" data-arg1="${escapeHtml(ogrt.id)}" class="text-red-500 hover:text-red-700 text-xs font-extrabold px-2 py-1 hover:bg-red-50 rounded-lg transition inline-flex items-center gap-0.5">
               🗑️ Sil
             </button>
           </td>
@@ -2024,6 +2034,14 @@
         const tamamKayit = aktifOgrenci.tamamlananlar.find(t => t.kitapId === k.kitapId);
         const tema = kitapTurTemasiAl(k.tur);
         const topSayfa = Math.max(1, Number(k.sayfaSayisi) || 1);
+        let ogrSiraNo = Number(k.siraNo) || 0;
+        if (!ogrSiraNo) {
+          const match = String(k.kitapAdi || '').trim().match(/^(\d+)[\.\-\)\s:]+/);
+          if (match) ogrSiraNo = parseInt(match[1], 10);
+        }
+        const siraRozetHtml = ogrSiraNo > 0
+          ? `<span class="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-lg bg-amber-500 text-white font-black text-[11px] shadow-2xs">#${ogrSiraNo}</span>`
+          : '';
 
         let durumRozeti = '';
         let butonHtml = '';
@@ -2079,9 +2097,12 @@
             <div class="h-2 bg-gradient-to-r ${tema.ustRenk}"></div>
             <div class="p-4 pb-2">
               <div class="flex items-start justify-between gap-2 mb-2">
-                <span class="inline-flex items-center gap-1 text-[11px] font-extrabold ${tema.etiketRenk} px-2.5 py-0.5 rounded-lg">
-                  <span>${tema.ikon}</span> ${escapeHtml(k.tur || 'Genel')}
-                </span>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  ${siraRozetHtml}
+                  <span class="inline-flex items-center gap-1 text-[11px] font-extrabold ${tema.etiketRenk} px-2.5 py-0.5 rounded-lg">
+                    <span>${tema.ikon}</span> ${escapeHtml(k.tur || 'Genel')}
+                  </span>
+                </div>
                 ${durumRozeti}
               </div>
               <h4 class="font-black text-slate-800 text-base leading-snug font-hand">${escapeHtml(k.kitapAdi)}</h4>
@@ -2928,7 +2949,18 @@
       const aramaEl = document.getElementById('inpOgretmenHavuzAra');
       const aramaMetni = (aramaEl ? aramaEl.value : '').toLowerCase().trim();
       const siraEl = document.getElementById('selOgretmenHavuzSira');
-      const siraKriteri = siraEl ? siraEl.value : 'eklenme-yeni';
+      const siraKriteri = siraEl ? siraEl.value : 'ogretmen-sira';
+
+      // Sürükle bırak sadece özel sıra kriterinde ve tümü seçiliyken aktiftir
+      const suruklenebilirMi = (siraKriteri === 'ogretmen-sira' && !aramaMetni && aktifOgretmenHavuzDurum === 'tumu');
+      const bilgiBanner = document.getElementById('ogretmenSiralamaBilgi');
+      if (bilgiBanner) {
+        if (siraKriteri === 'ogretmen-sira') {
+          bilgiBanner.classList.remove('hidden');
+        } else {
+          bilgiBanner.classList.add('hidden');
+        }
+      }
 
       // Okuma verileri haritası ve sayaçlar
       let sayacTumu = 0;
@@ -2943,6 +2975,18 @@
 
         const kIdStr = String(k.kitapId || '').trim();
         const kAdNorm = String(k.kitapAdi || '').trim().toLowerCase();
+
+        // 1, 2, 3 Sıra Numarası Algılama
+        let siraNo = Number(k.siraNo);
+        if (!siraNo || isNaN(siraNo) || siraNo <= 0) {
+          const basRegex = /^(\d+)[\.\-\)\s:]+/;
+          const eslesme = String(k.kitapAdi || '').trim().match(basRegex);
+          if (eslesme && eslesme[1]) {
+            siraNo = parseInt(eslesme[1], 10);
+          } else {
+            siraNo = index + 1;
+          }
+        }
 
         const okumalar = (ogretmenTumOkunanlarCache || []).filter(r => {
           if (kIdStr && r.kitapId && String(r.kitapId).trim() === kIdStr) return true;
@@ -2981,6 +3025,7 @@
 
         return {
           ...k,
+          _siraNo: siraNo,
           _index: index,
           _ileriTarihliMi: ileriTarihliMi,
           _okumaSayisi: okumaSayisi,
@@ -3018,6 +3063,12 @@
       });
 
       filtrelenmis.sort((a, b) => {
+        if (siraKriteri === 'ogretmen-sira') {
+          const sA = Number(a._siraNo) || 99999;
+          const sB = Number(b._siraNo) || 99999;
+          if (sA !== sB) return sA - sB;
+          return (a._index || 0) - (b._index || 0);
+        }
         if (siraKriteri === 'alfabetik-az') {
           return String(a.kitapAdi || '').localeCompare(String(b.kitapAdi || ''), 'tr', { sensitivity: 'base' });
         }
@@ -3070,7 +3121,7 @@
         return;
       }
 
-      filtrelenmis.forEach(k => {
+      filtrelenmis.forEach((k, gosterimIndex) => {
         const kitapTarih = k.aktifTarih ? String(k.aktifTarih).slice(0, 10) : '';
         const tarihRozeti = k._ileriTarihliMi
           ? `<span class="inline-flex items-center gap-1 text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full border border-amber-300">⏳ ${escapeHtml(tarihGorunurFormat(kitapTarih))} tarihinde açılacak</span>`
@@ -3098,14 +3149,41 @@
         }
 
         const item = document.createElement('div');
-        item.className = `bg-white p-4 rounded-2xl border ${k._ileriTarihliMi ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'} flex flex-col justify-between shadow-sm gap-3 hover:shadow-md transition`;
+        item.className = `kitap-karti relative bg-white p-4 rounded-2xl border ${k._ileriTarihliMi ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'} flex flex-col justify-between shadow-sm gap-3 hover:shadow-md transition ${suruklenebilirMi ? 'cursor-grab active:cursor-grabbing' : ''}`;
+        item.setAttribute('data-kitap-id', k.kitapId);
+        item.setAttribute('data-sira-no', k._siraNo);
+        if (suruklenebilirMi) {
+          item.setAttribute('draggable', 'true');
+          item.ondragstart = (e) => surukleBaslat(e, k.kitapId);
+          item.ondragover = (e) => surukleUzerinde(e);
+          item.ondragleave = (e) => surukleAyrildi(e);
+          item.ondrop = (e) => surukleBirak(e, k.kitapId);
+          item.ondragend = (e) => surukleBitti(e);
+        }
+
+        const siraRozetHtml = `
+          <div class="flex items-center gap-1 shrink-0">
+            ${suruklenebilirMi ? `<span class="cursor-grab text-slate-400 hover:text-indigo-600 text-sm px-1 py-0.5 select-none" title="Sürükleyip sırasını değiştirmek için basılı tutun">⠿</span>` : ''}
+            <button type="button" onclick="kitapSiraDegistirPrompt('${escapeHtml(k.kitapId)}', ${k._siraNo})" class="inline-flex items-center justify-center font-black text-xs px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs hover:scale-105 active:scale-95 transition" title="Kitap Sırası #${k._siraNo} (Tıklayarak sırayı doğrudan değiştirebilirsiniz)">
+              #${k._siraNo}
+            </button>
+            <div class="inline-flex flex-col -space-y-0.5">
+              <button type="button" onclick="kitapSiraKaydir('${escapeHtml(k.kitapId)}', -1)" class="w-4 h-3.5 flex items-center justify-center rounded bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-[9px] font-black transition" title="Bir sıra öne al">▲</button>
+              <button type="button" onclick="kitapSiraKaydir('${escapeHtml(k.kitapId)}', 1)" class="w-4 h-3.5 flex items-center justify-center rounded bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-[9px] font-black transition" title="Bir sıra arkaya al">▼</button>
+            </div>
+          </div>
+        `;
+
         item.innerHTML = `
           <div class="space-y-1.5">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded">${escapeHtml(k.tur || 'Genel')}</span>
-              ${tarihRozeti}
+            <div class="flex items-center justify-between gap-1.5">
+              ${siraRozetHtml}
+              <div class="flex flex-wrap items-center gap-1.5 justify-end">
+                <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded">${escapeHtml(k.tur || 'Genel')}</span>
+                ${tarihRozeti}
+              </div>
             </div>
-            <h5 class="font-black text-slate-800 text-sm leading-snug">${escapeHtml(k.kitapAdi)}</h5>
+            <h5 class="font-black text-slate-800 text-sm leading-snug mt-1">${escapeHtml(k.kitapAdi)}</h5>
             <p class="text-xs text-slate-500 font-medium">${escapeHtml(k.yazar)} • <span class="font-bold text-slate-700">${Number(k.sayfaSayisi) || 0} Sayfa</span></p>
 
             <div class="pt-1 space-y-1">
@@ -3129,6 +3207,153 @@
       });
     }
 
+    // ========================================================
+    // SÜRÜKLE-BIRAK VE KİTAP SIRALAMA YÖNETİMİ
+    // ========================================================
+    let suruklenenKitapId = null;
+
+    function surukleBaslat(e, kitapId) {
+      suruklenenKitapId = kitapId;
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', kitapId);
+      }
+      const kart = e.currentTarget;
+      if (kart) {
+        kart.classList.add('opacity-40', 'scale-95', 'border-indigo-400');
+      }
+    }
+
+    function surukleUzerinde(e) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const kart = e.currentTarget.closest('.kitap-karti');
+      if (kart) {
+        kart.classList.add('border-indigo-600', 'bg-indigo-50/50', 'ring-2', 'ring-indigo-300');
+      }
+    }
+
+    function surukleAyrildi(e) {
+      const kart = e.currentTarget.closest('.kitap-karti');
+      if (kart) {
+        kart.classList.remove('border-indigo-600', 'bg-indigo-50/50', 'ring-2', 'ring-indigo-300');
+      }
+    }
+
+    function surukleBitti(e) {
+      document.querySelectorAll('.kitap-karti').forEach(el => {
+        el.classList.remove('opacity-40', 'scale-95', 'border-indigo-400', 'border-indigo-600', 'bg-indigo-50/50', 'ring-2', 'ring-indigo-300');
+      });
+      suruklenenKitapId = null;
+    }
+
+    function surukleBirak(e, hedefKitapId) {
+      e.preventDefault();
+      e.stopPropagation();
+      surukleBitti(e);
+      if (!suruklenenKitapId || suruklenenKitapId === hedefKitapId) return;
+
+      kitapKonumunuTasi(suruklenenKitapId, hedefKitapId);
+    }
+
+    function kitapKonumunuTasi(kaynakId, hedefId) {
+      const havuz = [...(ogretmenHavuzCache || [])];
+      const kaynakIdx = havuz.findIndex(k => String(k.kitapId) === String(kaynakId));
+      const hedefIdx = havuz.findIndex(k => String(k.kitapId) === String(hedefId));
+      if (kaynakIdx === -1 || hedefIdx === -1) return;
+
+      const [tasinan] = havuz.splice(kaynakIdx, 1);
+      havuz.splice(hedefIdx, 0, tasinan);
+
+      // Yeniden 1'den başlayan sıra numarası ver
+      havuz.forEach((k, idx) => {
+        k.siraNo = idx + 1;
+      });
+
+      havuzSiralamaKaydet(havuz);
+    }
+
+    function kitapSiraKaydir(kitapId, yon) {
+      const havuz = [...(ogretmenHavuzCache || [])];
+      // Mevcut sıraya göre sırala
+      havuz.sort((a, b) => (Number(a.siraNo) || 99999) - (Number(b.siraNo) || 99999));
+      const idx = havuz.findIndex(k => String(k.kitapId) === String(kitapId));
+      if (idx === -1) return;
+
+      const yeniIdx = idx + yon;
+      if (yeniIdx < 0 || yeniIdx >= havuz.length) {
+        toastGoster(yon < 0 ? 'Kitap zaten listenin en başında!' : 'Kitap zaten listenin en sonunda!', 'ℹ️');
+        return;
+      }
+
+      const temp = havuz[idx];
+      havuz[idx] = havuz[yeniIdx];
+      havuz[yeniIdx] = temp;
+
+      havuz.forEach((k, i) => {
+        k.siraNo = i + 1;
+      });
+
+      havuzSiralamaKaydet(havuz);
+    }
+
+    function kitapSiraDegistirPrompt(kitapId, mevcutSira) {
+      const toplam = (ogretmenHavuzCache || []).length;
+      const yanit = prompt(`Bu kitabın yeni sıra numarasını girin (1 - ${toplam}):`, mevcutSira);
+      if (!yanit) return;
+      const yeniSira = parseInt(yanit.trim(), 10);
+      if (isNaN(yeniSira) || yeniSira < 1 || yeniSira > toplam) {
+        toastGoster(`Lütfen 1 ile ${toplam} arasında geçerli bir sıra numarası girin.`, '⚠️');
+        return;
+      }
+      if (yeniSira === mevcutSira) return;
+
+      const havuz = [...(ogretmenHavuzCache || [])];
+      havuz.sort((a, b) => (Number(a.siraNo) || 99999) - (Number(b.siraNo) || 99999));
+      const idx = havuz.findIndex(k => String(k.kitapId) === String(kitapId));
+      if (idx === -1) return;
+
+      const [tasinan] = havuz.splice(idx, 1);
+      havuz.splice(yeniSira - 1, 0, tasinan);
+
+      havuz.forEach((k, i) => {
+        k.siraNo = i + 1;
+      });
+
+      havuzSiralamaKaydet(havuz);
+    }
+
+    async function havuzSiralamaKaydet(yeniHavuz) {
+      ogretmenHavuzCache = yeniHavuz;
+      demoData.havuz = yeniHavuz;
+      localStorage.setItem('kitapKurtlari_veri_v1', JSON.stringify(demoData));
+
+      // UI'yi hemen güncelle
+      ogretmenHavuzFiltrele();
+      toastGoster('Kitap sıralaması güncellendi! 🔢', '✅');
+
+      // Backend API varsa senkronize et
+      if (aktifApiHedefi() && aktifOgretmen && aktifOgretmen.pin) {
+        try {
+          const kitapIdler = yeniHavuz.map(k => k.kitapId);
+          await apiIstegiGonder({
+            action: 'havuzSiraGuncelle',
+            pin: aktifOgretmen.pin,
+            kitapIdler: kitapIdler
+          });
+        } catch (err) {
+          console.warn('Backend sıra güncelleme uyarısı:', err);
+        }
+      }
+    }
+
+    window.surukleBaslat = surukleBaslat;
+    window.surukleUzerinde = surukleUzerinde;
+    window.surukleAyrildi = surukleAyrildi;
+    window.surukleBitti = surukleBitti;
+    window.surukleBirak = surukleBirak;
+    window.kitapSiraKaydir = kitapSiraKaydir;
+    window.kitapSiraDegistirPrompt = kitapSiraDegistirPrompt;
     window.ogretmenHavuzDurumSec = ogretmenHavuzDurumSec;
     window.ogretmenHavuzFiltrele = ogretmenHavuzFiltrele;
 

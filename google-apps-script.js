@@ -217,6 +217,9 @@ function istekYonlendir(params) {
     if (action === "havuzdanKitapSil") {
       return jsonYanit(havuzdanKitapSil(ss, params));
     }
+    if (action === "havuzSiraGuncelle") {
+      return jsonYanit(havuzSiraGuncelle(ss, params));
+    }
     if (action === "ogrenciEkle") {
       return jsonYanit(ogrenciEkle(ss, params));
     }
@@ -1185,6 +1188,39 @@ function havuzdanKitapSil(ss, params) {
   return { success: false, message: "Kitap bulunamadı." };
 }
 
+function havuzSiraGuncelle(ss, params) {
+  const ogretmen = dogrulaOgretmen(ss, params.pin || params.sifre);
+  if (!ogretmen) return { success: false, message: "Yetkisiz işlem!" };
+
+  const kitapIdler = Array.isArray(params.kitapIdler) ? params.kitapIdler : [];
+  if (kitapIdler.length === 0) return { success: false, message: "Kitap listesi boş olamaz." };
+
+  const havuzSayfa = ss.getSheetByName(TABLO_ISIMLERI.KITAP_HAVUZU);
+  if (!havuzSayfa) return { success: false, message: "Kütüphane tablosu bulunamadı." };
+
+  const data = havuzSayfa.getDataRange().getValues();
+  if (data.length <= 1) return { success: true, message: "Düzenlenecek kayıt yok." };
+
+  const rows = data.slice(1);
+  const siraMap = {};
+  kitapIdler.forEach(function(id, idx) {
+    siraMap[String(id).trim()] = idx + 1;
+  });
+
+  rows.sort(function(a, b) {
+    const idA = String(a[0]).trim();
+    const idB = String(b[0]).trim();
+    const siraA = siraMap[idA] !== undefined ? siraMap[idA] : 99999;
+    const siraB = siraMap[idB] !== undefined ? siraMap[idB] : 99999;
+    return siraA - siraB;
+  });
+
+  const range = havuzSayfa.getRange(2, 1, rows.length, rows[0].length);
+  range.setValues(rows);
+
+  return { success: true, message: "Kitap sıralaması başarıyla kaydedildi." };
+}
+
 /**
  * Mevcut tüm aktif öğrenci PIN'lerini Set olarak döndürür (PIN Çakışması Önleme)
  */
@@ -1421,18 +1457,31 @@ function getKitapHavuzu(ss, sinifFiltre, sadeceAktifTarihliler) {
       }
       if (!eklenmeTarihi) eklenmeTarihi = aktifTarih || bugun;
 
+      const kAdi = String(data[i][1]);
+      let siraNo = 0;
+      const m = kAdi.trim().match(/^(\d+)[\.\-\)\s:]+/);
+      if (m && m[1]) {
+        siraNo = parseInt(m[1], 10);
+      } else {
+        siraNo = havuz.length + 1;
+      }
+
       havuz.push({
         kitapId: String(data[i][0]),
-        kitapAdi: String(data[i][1]),
+        kitapAdi: kAdi,
         yazar: String(data[i][2]),
         sayfaSayisi: Math.max(1, Number(data[i][3]) || 1),
         tur: String(data[i][4] || "Genel"),
         sinif: kitapSinif,
         aktifTarih: aktifTarih,
-        eklenmeTarihi: eklenmeTarihi
+        eklenmeTarihi: eklenmeTarihi,
+        siraNo: siraNo
       });
     }
   }
+  havuz.sort(function(a, b) {
+    return (Number(a.siraNo) || 99999) - (Number(b.siraNo) || 99999);
+  });
   return havuz;
 }
 

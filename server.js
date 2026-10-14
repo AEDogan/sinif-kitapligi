@@ -191,11 +191,21 @@ function apiIslemCalistir(params, ip) {
     const ogrSinif = ogr.sinif || (ogrt ? ogrt.sinif : db.ayarlar.SinifAdi);
     const ogretmenAdi = ogrt ? ogrt.adSoyad : '';
 
-    const aktifHavuz = db.havuz.filter(k => {
-      const sinifUygun = !k.sinif || k.sinif === 'Ortak' || k.sinif === ogrSinif;
-      const tarihUygun = !k.aktifTarih || String(k.aktifTarih).slice(0, 10) <= bugun;
-      return sinifUygun && tarihUygun;
-    });
+    const aktifHavuz = db.havuz
+      .filter(k => {
+        const sinifUygun = !k.sinif || k.sinif === 'Ortak' || k.sinif === ogrSinif;
+        const tarihUygun = !k.aktifTarih || String(k.aktifTarih).slice(0, 10) <= bugun;
+        return sinifUygun && tarihUygun;
+      })
+      .map((k, index) => {
+        let sNo = Number(k.siraNo);
+        if (!sNo || isNaN(sNo) || sNo <= 0) {
+          const m = String(k.kitapAdi || '').trim().match(/^(\d+)[\.\-\)\s:]+/);
+          sNo = m && m[1] ? parseInt(m[1], 10) : index + 1;
+        }
+        return { ...k, siraNo: sNo };
+      })
+      .sort((a, b) => (Number(a.siraNo) || 99999) - (Number(b.siraNo) || 99999));
 
     const ogrKayitlar = db.okunanlar.filter(k => k.ogrenciId === ogr.id);
     const devamEdenler = ogrKayitlar.filter(k => k.durum === 'Devam Ediyor');
@@ -386,7 +396,19 @@ function apiIslemCalistir(params, ip) {
 
     const sinifHavuzu = db.havuz
       .filter(k => !k.sinif || k.sinif === 'Ortak' || k.sinif === ogrt.sinif)
-      .map(k => ({ ...k, eklenmeTarihi: k.eklenmeTarihi || k.aktifTarih || bugun }));
+      .map((k, index) => {
+        let sNo = Number(k.siraNo);
+        if (!sNo || isNaN(sNo) || sNo <= 0) {
+          const m = String(k.kitapAdi || '').trim().match(/^(\d+)[\.\-\)\s:]+/);
+          sNo = m && m[1] ? parseInt(m[1], 10) : index + 1;
+        }
+        return {
+          ...k,
+          siraNo: sNo,
+          eklenmeTarihi: k.eklenmeTarihi || k.aktifTarih || bugun
+        };
+      })
+      .sort((a, b) => (Number(a.siraNo) || 99999) - (Number(b.siraNo) || 99999));
 
     return {
       success: true,
@@ -544,6 +566,30 @@ function apiIslemCalistir(params, ip) {
     db.havuz = db.havuz.filter(k => k.kitapId !== params.kitapId);
     dbKaydet(db);
     return { success: true, message: 'Kitap kütüphaneden kaldırıldı.' };
+  }
+
+  if (action === 'havuzSiraGuncelle') {
+    const ogrt = dogrulaOgretmen(params.pin);
+    if (!ogrt) return { success: false, message: 'Yetkisiz işlem!' };
+
+    const kitapIdler = Array.isArray(params.kitapIdler) ? params.kitapIdler : [];
+    if (kitapIdler.length === 0) return { success: false, message: 'Kitap listesi boş olamaz.' };
+
+    const siraMap = new Map();
+    kitapIdler.forEach((id, idx) => {
+      siraMap.set(String(id).trim(), idx + 1);
+    });
+
+    db.havuz.forEach(k => {
+      const kId = String(k.kitapId).trim();
+      if (siraMap.has(kId)) {
+        k.siraNo = siraMap.get(kId);
+      }
+    });
+
+    db.havuz.sort((a, b) => (Number(a.siraNo) || 99999) - (Number(b.siraNo) || 99999));
+    dbKaydet(db);
+    return { success: true, message: 'Kitap sıralaması başarıyla kaydedildi.' };
   }
 
   // 8. ÖĞRENCİ EKLE / TOPLU EKLE / GÜNCELLE / SİL (PIN Benzersizlik Kontrollü)
